@@ -20,12 +20,18 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
    cd ASCII-Generator
    ```
 
-2. **Install dependencies:**
+2. **Create and activate a virtual environment:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Set up environment variables:**
+4. **Set up environment variables:**
    ```bash
    cp .env.example .env
    # Edit .env and add your Gemini API key
@@ -37,6 +43,17 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
    ```
 
 ## Usage
+
+**Important:** Make sure to activate the virtual environment first, or use the venv Python directly:
+
+```bash
+# Option 1: Activate the virtual environment
+source .venv/bin/activate
+python cli.py art "a cat wearing sunglasses"
+
+# Option 2: Use venv Python directly (without activation)
+.venv/bin/python cli.py art "a cat wearing sunglasses"
+```
 
 ### ASCII Art
 

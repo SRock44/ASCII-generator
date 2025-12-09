@@ -43,7 +43,12 @@ def art(prompt, no_cache):
         result = generator.generate(prompt, use_cache=not no_cache)
         
         renderer.clear_line()
-        renderer.render_ascii(result, title="ASCII Art")
+        # Check if result is an error
+        if result.startswith("ERROR_CODE:"):
+            renderer.render_error(result)
+            sys.exit(1)
+        else:
+            renderer.render_ascii(result, title="ASCII Art")
         
     except Exception as e:
         renderer = Renderer()
@@ -72,7 +77,12 @@ def chart(prompt, no_cache):
         result = generator.generate(prompt, use_cache=not no_cache)
         
         renderer.clear_line()
-        renderer.render_ascii(result, title="Chart")
+        # Check if result is an error
+        if result.startswith("ERROR_CODE:"):
+            renderer.render_error(result)
+            sys.exit(1)
+        else:
+            renderer.render_ascii(result, title="Chart")
         
     except Exception as e:
         renderer = Renderer()
@@ -101,7 +111,12 @@ def diagram(prompt, no_cache):
         result = generator.generate(prompt, use_cache=not no_cache)
         
         renderer.clear_line()
-        renderer.render_ascii(result, title="Diagram")
+        # Check if result is an error
+        if result.startswith("ERROR_CODE:"):
+            renderer.render_error(result)
+            sys.exit(1)
+        else:
+            renderer.render_ascii(result, title="Diagram")
         
     except Exception as e:
         renderer = Renderer()
@@ -142,7 +157,12 @@ def codebase(path, no_cache, max_files):
         result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True)
         
         renderer.clear_line()
-        renderer.render_ascii(result, title="Architecture Diagram")
+        # Check if result is an error
+        if result.startswith("ERROR_CODE:"):
+            renderer.render_error(result)
+            sys.exit(1)
+        else:
+            renderer.render_ascii(result, title="Architecture Diagram")
         
     except Exception as e:
         renderer = Renderer()
@@ -189,7 +209,12 @@ def github(repo_url, no_cache, max_files, token):
         result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True)
         
         renderer.clear_line()
-        renderer.render_ascii(result, title="Architecture Diagram")
+        # Check if result is an error
+        if result.startswith("ERROR_CODE:"):
+            renderer.render_error(result)
+            sys.exit(1)
+        else:
+            renderer.render_ascii(result, title="Architecture Diagram")
         
     except Exception as e:
         renderer = Renderer()

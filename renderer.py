@@ -43,9 +43,27 @@ class Renderer:
         Render error message.
         
         Args:
-            message: Error message
+            message: Error message (may contain ERROR_CODE and ERROR_MESSAGE format)
         """
-        self.console.print(f"[bold red]Error:[/bold red] {message}")
+        # Check if message contains error code format
+        if "ERROR_CODE:" in message and "ERROR_MESSAGE:" in message:
+            lines = message.split("\n")
+            error_code = None
+            error_message = None
+            
+            for line in lines:
+                if line.startswith("ERROR_CODE:"):
+                    error_code = line.replace("ERROR_CODE:", "").strip()
+                elif line.startswith("ERROR_MESSAGE:"):
+                    error_message = line.replace("ERROR_MESSAGE:", "").strip()
+            
+            if error_code and error_message:
+                self.console.print(f"[bold red]Error Code:[/bold red] [yellow]{error_code}[/yellow]")
+                self.console.print(f"[bold red]Error Message:[/bold red] {error_message}")
+            else:
+                self.console.print(f"[bold red]Error:[/bold red] {message}")
+        else:
+            self.console.print(f"[bold red]Error:[/bold red] {message}")
     
     def render_info(self, message: str):
         """
