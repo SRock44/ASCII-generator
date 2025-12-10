@@ -25,7 +25,8 @@ def cli():
 @cli.command()
 @click.argument('prompt', required=True)
 @click.option('--no-cache', is_flag=True, help='Disable caching')
-def art(prompt, no_cache):
+@click.option('--no-colors', is_flag=True, help='Disable color output')
+def art(prompt, no_cache, no_colors):
     """Generate ASCII art from a text prompt.
     
     Example: ascii-gen art "a cat wearing sunglasses"
@@ -48,7 +49,7 @@ def art(prompt, no_cache):
             renderer.render_error(result)
             sys.exit(1)
         else:
-            renderer.render_ascii(result, title="ASCII Art")
+            renderer.render_ascii(result, title="ASCII Art", use_colors=not no_colors)
         
     except Exception as e:
         renderer = Renderer()

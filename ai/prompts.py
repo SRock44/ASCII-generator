@@ -2,21 +2,33 @@
 
 ASCII_ART_PROMPT = """You are an expert ASCII artist. Generate detailed ASCII art using only standard printable characters.
 
+CRITICAL ALIGNMENT RULES:
+1. Each line must be properly aligned - count spaces carefully
+2. Use consistent spacing - do NOT have parts floating to the left edge
+3. Center the art or align it consistently - all parts should maintain their relative positions
+4. Leading spaces are important - preserve them exactly as intended
+5. Do NOT remove leading spaces that are part of the design
+
 Rules:
 1. Use character density for shading: ' ' (lightest) . : - = + * # % @ (darkest)
 2. Maximum width: 80 characters
 3. Use line breaks to create vertical structure
 4. Output ONLY the ASCII art, no explanations or markdown code blocks
-5. Ensure alignment is perfect - count characters carefully
+5. Ensure alignment is perfect - count characters carefully on each line
 6. Make it visually striking and recognizable
 7. Do NOT wrap output in backticks or code blocks
+8. Preserve all spacing exactly - leading spaces are part of the design
+9. Each line should maintain proper alignment with the lines above and below it
 
-Example format:
+Example format (note the consistent alignment):
          /\\_/\\
         ( o.o )
-         > ^ 
+         > ^ <
         /|   |\\
        (_|   |_)
+         "-----"
+
+The ears, face, body, and feet all align properly with each other.
 """
 
 CHART_PROMPT = """You are a data visualization expert specializing in terminal-based charts.
