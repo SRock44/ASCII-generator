@@ -92,7 +92,14 @@ Create flowcharts and diagrams:
 ```bash
 python cli.py diagram "flowchart: user login -> authenticate -> dashboard"
 python cli.py diagram "architecture: frontend -> API -> database"
+python cli.py chart "entity relationship diagram of a basic bank account structure" --provider groq
 ```
+
+**Example Output:**
+
+![Entity Relationship Diagram](images/2.png)
+
+*Example ERD diagram generated with Groq showing database structure with entities, attributes, and relationships.*
 
 ### Codebase Analysis
 

@@ -142,45 +142,42 @@ class Renderer:
             while i < len(line):
                 char = line[i]
                 
-                # Box-drawing characters (diagram boxes) - cyan
+                # Box-drawing characters (Unicode box-drawing) - cyan
                 if char in box_chars:
                     text.append(char, style="cyan")
-                # ASCII box characters - cyan
-                elif char in ascii_box_chars:
-                    text.append(char, style="cyan")
-                # Arrows - yellow for diagrams, red for art
+                # Arrows - yellow
                 elif char in ['→', '←', '↑', '↓']:
                     text.append(char, style="yellow")
-                elif char in ['(', ')', '[', ']', '{', '}', '<', '>']:
-                    # Brackets/parentheses - yellow
-                    text.append(char, style="yellow")
-                elif char in ['@', '#', '%']:
-                    # Dense shading - bright white
-                    text.append(char, style="bright_white")
-                elif char == '*':
-                    # Stars/sparkles - bright yellow
-                    text.append(char, style="bright_yellow")
-                elif char in ['.', ':', ',', ';']:
-                    # Light details - green
-                    text.append(char, style="green")
-                elif char in ['^', 'v', 'V']:
-                    # Arrows/triangles - red
-                    text.append(char, style="red")
-                elif char.lower() in ['o', '0']:
-                    # Eyes/circles - bright yellow or bright cyan
-                    text.append(char, style="bright_yellow")
-                elif char in ['"', "'", '`']:
-                    # Quotes/strings - magenta
-                    text.append(char, style="magenta")
-                elif char in ['~']:
-                    # Decorative - bright magenta
-                    text.append(char, style="bright_magenta")
-                elif char.isalnum() or char in [' ', '.', ',', ':', ';', '!', '?', '(', ')', '-']:
-                    # Text content (letters, numbers, punctuation, spaces) - always white
-                    # This ensures text inside boxes stays white
-                    text.append(char, style="white")
+                # ASCII box characters - cyan (for structural elements)
+                elif char in ascii_box_chars:
+                    # Check if it's likely a structural element vs text content
+                    # Structural if: at line edges, or part of box pattern
+                    is_structural = False
+                    if i == 0 or i == len(line) - 1:
+                        is_structural = True
+                    elif char in ['/', '\\']:
+                        # Check if surrounded by spaces or other structural chars
+                        prev = line[i-1] if i > 0 else ' '
+                        next = line[i+1] if i < len(line) - 1 else ' '
+                        if prev in [' ', '_', '\\', '/', '|'] or next in [' ', '_', '\\', '/', '|']:
+                            is_structural = True
+                    elif char == '|':
+                        # Vertical line - structural if not surrounded by alphanumeric
+                        prev = line[i-1] if i > 0 else ' '
+                        next = line[i+1] if i < len(line) - 1 else ' '
+                        if not (prev.isalnum() and next.isalnum()):
+                            is_structural = True
+                    elif char in ['_', '-', '=']:
+                        # Horizontal lines - structural if at edges or repeated
+                        if i < 2 or i > len(line) - 3 or line.count(char) > 3:
+                            is_structural = True
+                    
+                    if is_structural:
+                        text.append(char, style="cyan")
+                    else:
+                        text.append(char, style="white")
+                # All text content - white for consistency
                 else:
-                    # Default - white for any other character (likely text)
                     text.append(char, style="white")
                 
                 i += 1
