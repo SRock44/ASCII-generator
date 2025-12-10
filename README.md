@@ -131,7 +131,7 @@ Create a `.env` file in the project root:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-pro
+GEMINI_MODEL=gemini-2.5-flash
 CACHE_ENABLED=true
 CACHE_DIR=.cache
 ```

@@ -57,6 +57,9 @@ class GeminiClient(AIClient):
             raise ValueError("GEMINI_API_KEY is required")
         
         genai.configure(api_key=self.api_key)
+        if not self.model_name:
+            raise ValueError("Model name is required")
+        
         self.model = genai.GenerativeModel(self.model_name)
     
     def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:

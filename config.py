@@ -8,7 +8,7 @@ load_dotenv()
 
 # API Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 # Cache Configuration
 CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"

@@ -25,3 +25,4 @@ class AIClient(ABC):
         """Check if the AI client is available and configured."""
         pass
 
+
