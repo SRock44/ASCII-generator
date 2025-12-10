@@ -23,37 +23,49 @@ def cli():
 
 
 @cli.command()
-@click.argument('prompt', required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching')
-@click.option('--no-colors', is_flag=True, help='Disable color output')
+@click.argument('prompts', nargs=-1, required=True)
+@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
+@click.option('--no-colors', is_flag=True, help='Disable color output (monochrome)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
-              default='auto', help='AI provider to use: gemini, groq, or auto (default)')
-def art(prompt, no_cache, no_colors, provider):
-    """Generate ASCII art from a text prompt.
+              default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
+def art(prompts, no_cache, no_colors, provider):
+    """Generate ASCII art from one or more text prompts.
     
-    Example: ascii-gen art "a cat wearing sunglasses"
-    Example: ascii-gen art "a cat" --provider groq
+    Examples:
+      ascii-gen art "a cat wearing sunglasses"
+      ascii-gen art "a cat" "a dog" "a bird" --provider groq
+      ascii-gen art "a cat" --provider groq --no-cache --no-colors
     """
     try:
         renderer = Renderer()
-        renderer.render_loading("Generating ASCII art...")
         
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name)
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        
         generator = ASCIIArtGenerator(ai_client, cache, rate_limiter)
-        result = generator.generate(prompt, use_cache=not no_cache)
         
-        renderer.clear_line()
-        # Check if result is an error
-        if result.startswith("ERROR_CODE:"):
-            renderer.render_error(result)
-            sys.exit(1)
-        else:
-            renderer.render_ascii(result, title="ASCII Art", use_colors=not no_colors)
+        # Process each prompt
+        for i, prompt in enumerate(prompts, 1):
+            if len(prompts) > 1:
+                renderer.render_info(f"Generating ASCII art {i}/{len(prompts)}: {prompt[:50]}...")
+            else:
+                renderer.render_loading("Generating ASCII art...")
+            
+            result = generator.generate(prompt, use_cache=not no_cache)
+            
+            renderer.clear_line()
+            # Check if result is an error
+            if result.startswith("ERROR_CODE:"):
+                renderer.render_error(result)
+                if len(prompts) > 1:
+                    continue  # Continue with next prompt
+                else:
+                    sys.exit(1)
+            else:
+                title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
+                renderer.render_ascii(result, title=title, use_colors=not no_colors)
         
     except Exception as e:
         renderer = Renderer()
@@ -62,35 +74,47 @@ def art(prompt, no_cache, no_colors, provider):
 
 
 @cli.command()
-@click.argument('prompt', required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching')
+@click.argument('prompts', nargs=-1, required=True)
+@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
-              default='auto', help='AI provider to use: gemini, groq, or auto (default)')
-def chart(prompt, no_cache, provider):
-    """Generate a chart from a text prompt.
+              default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
+def chart(prompts, no_cache, provider):
+    """Generate a chart from one or more text prompts.
     
-    Example: ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
+    Examples:
+      ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
+      ascii-gen chart "sales data" "revenue growth" --provider groq --no-cache
     """
     try:
         renderer = Renderer()
-        renderer.render_loading("Generating chart...")
         
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name)
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        
         generator = ChartGenerator(ai_client, cache, rate_limiter)
-        result = generator.generate(prompt, use_cache=not no_cache)
         
-        renderer.clear_line()
-        # Check if result is an error
-        if result.startswith("ERROR_CODE:"):
-            renderer.render_error(result)
-            sys.exit(1)
-        else:
-            renderer.render_ascii(result, title="Chart")
+        # Process each prompt
+        for i, prompt in enumerate(prompts, 1):
+            if len(prompts) > 1:
+                renderer.render_info(f"Generating chart {i}/{len(prompts)}: {prompt[:50]}...")
+            else:
+                renderer.render_loading("Generating chart...")
+            
+            result = generator.generate(prompt, use_cache=not no_cache)
+            
+            renderer.clear_line()
+            # Check if result is an error
+            if result.startswith("ERROR_CODE:"):
+                renderer.render_error(result)
+                if len(prompts) > 1:
+                    continue  # Continue with next prompt
+                else:
+                    sys.exit(1)
+            else:
+                title = f"Chart {i}" if len(prompts) > 1 else "Chart"
+                renderer.render_ascii(result, title=title)
         
     except Exception as e:
         renderer = Renderer()
@@ -99,21 +123,21 @@ def chart(prompt, no_cache, provider):
 
 
 @cli.command()
-@click.argument('prompt', required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching')
+@click.argument('prompts', nargs=-1, required=True)
+@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
-              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
-              default='auto', help='AI provider to use: gemini, groq, or auto (default)')
-def diagram(prompt, no_cache, orientation, provider):
-    """Generate a diagram from a text prompt.
+              default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
+def diagram(prompts, no_cache, orientation, provider):
+    """Generate a diagram from one or more text prompts.
     
-    Example: ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
-    Example: ascii-gen diagram "workflow" --orientation left-to-right
+    Examples:
+      ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
+      ascii-gen diagram "workflow" "auth flow" --orientation left-to-right --provider groq --no-cache
     """
     try:
         renderer = Renderer()
-        renderer.render_loading("Generating diagram...")
         
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
@@ -126,17 +150,28 @@ def diagram(prompt, no_cache, orientation, provider):
         ai_client = create_ai_client(provider_name)
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
-        result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
         
-        renderer.clear_line()
-        # Check if result is an error
-        if result.startswith("ERROR_CODE:"):
-            renderer.render_error(result)
-            sys.exit(1)
-        else:
-            renderer.render_ascii(result, title="Diagram")
+        # Process each prompt
+        for i, prompt in enumerate(prompts, 1):
+            if len(prompts) > 1:
+                renderer.render_info(f"Generating diagram {i}/{len(prompts)}: {prompt[:50]}...")
+            else:
+                renderer.render_loading("Generating diagram...")
+            
+            result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
+            
+            renderer.clear_line()
+            # Check if result is an error
+            if result.startswith("ERROR_CODE:"):
+                renderer.render_error(result)
+                if len(prompts) > 1:
+                    continue  # Continue with next prompt
+                else:
+                    sys.exit(1)
+            else:
+                title = f"Diagram {i}" if len(prompts) > 1 else "Diagram"
+                renderer.render_ascii(result, title=title)
         
     except Exception as e:
         renderer = Renderer()
@@ -146,12 +181,12 @@ def diagram(prompt, no_cache, orientation, provider):
 
 @cli.command()
 @click.argument('path', type=click.Path(exists=True), default='.')
-@click.option('--no-cache', is_flag=True, help='Disable caching')
-@click.option('--max-files', default=50, help='Maximum files to analyze')
+@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
+@click.option('--max-files', default=50, help='Maximum number of files to analyze (default: 50)')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
-              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
-              default='auto', help='AI provider to use: gemini, groq, or auto (default)')
+              default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 def codebase(path, no_cache, max_files, orientation, provider):
     """Generate an architecture diagram from a local codebase.
     
@@ -203,13 +238,13 @@ def codebase(path, no_cache, max_files, orientation, provider):
 
 @cli.command()
 @click.argument('repo_url', required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching')
-@click.option('--max-files', default=50, help='Maximum files to analyze')
+@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
+@click.option('--max-files', default=50, help='Maximum number of files to analyze (default: 50)')
 @click.option('--token', help='GitHub personal access token (or set GITHUB_TOKEN env var)')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
-              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
-              default='auto', help='AI provider to use: gemini, groq, or auto (default)')
+              default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 def github(repo_url, no_cache, max_files, token, orientation, provider):
     """Generate an architecture diagram from a GitHub repository.
     

@@ -188,11 +188,19 @@ ASCII-Generator/
 
 ## API Limits
 
-The tool uses Google Gemini's free tier which has:
+### Gemini Free Tier
 - **15 requests per minute (RPM)**
 - **1 million tokens per day**
 
+### Groq Free Tier (Very Generous!)
+- **60 requests per minute (RPM)**
+- **1,000 requests per day**
+- **10,000 tokens per minute**
+- **300,000 tokens per day**
+
 The rate limiter automatically handles these limits. If you hit the limit, the tool will wait before making the next request.
+
+**Note:** Groq's free tier is much more generous than Gemini's, making it ideal for high-volume usage or when you need faster responses. The Kimi K2 model is particularly fast and well-suited for chart generation.
 
 ## Requirements
 

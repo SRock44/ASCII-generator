@@ -83,7 +83,7 @@ class GroqClient(AIClient):
                         model=self.model_name,
                         messages=messages,
                         temperature=0.6,
-                        max_completion_tokens=4096,
+                        max_completion_tokens=1024,  # Limit output to prevent excessive generation
                         top_p=1,
                         stream=False,  # Get full response at once
                         stop=None
@@ -107,6 +107,74 @@ class GroqClient(AIClient):
                         if lines[-1].strip() == "```":
                             lines = lines[:-1]
                         text = "\n".join(lines).strip()
+                    
+                    # Remove trailing repetitive patterns (like extra rectangles)
+                    lines = text.split("\n")
+                    cleaned_lines = []
+                    last_line = None
+                    repeat_count = 0
+                    trailing_simple_patterns = 0
+                    
+                    for line in lines:
+                        line_stripped = line.strip()
+                        
+                        # Skip empty lines at the end
+                        if not line_stripped:
+                            if cleaned_lines:  # Only skip if we have content
+                                trailing_simple_patterns += 1
+                                if trailing_simple_patterns > 2:  # Stop after 2 empty lines
+                                    break
+                                continue
+                            continue
+                        
+                        trailing_simple_patterns = 0  # Reset if we see content
+                        
+                        # Detect repetitive patterns (same line repeated many times)
+                        if last_line and line_stripped == last_line:
+                            repeat_count += 1
+                            if repeat_count > 2:  # If same line repeats more than 2 times, stop
+                                break
+                        else:
+                            repeat_count = 0
+                            last_line = line_stripped
+                        
+                        # Detect simple repetitive patterns (like |   | repeated)
+                        line_no_spaces = line_stripped.replace(' ', '')
+                        if len(line_no_spaces) > 0:
+                            # Check if line is mostly repetitive characters (like | | | or - - -)
+                            unique_chars = set(line_no_spaces)
+                            if len(unique_chars) <= 2:  # Only 1-2 unique characters
+                                # Check if it's a simple pattern (like |   | or - - -)
+                                if len(line_no_spaces) > 3:
+                                    # Count how many similar simple patterns we've seen recently
+                                    recent_simple = sum(1 for l in cleaned_lines[-10:] 
+                                                       if len(set(l.strip().replace(' ', ''))) <= 2 
+                                                       and len(l.strip().replace(' ', '')) > 3)
+                                    if recent_simple > 5:  # Too many simple patterns in a row
+                                        break
+                                    cleaned_lines.append(line)
+                                else:
+                                    cleaned_lines.append(line)
+                            else:
+                                cleaned_lines.append(line)
+                    
+                    text = "\n".join(cleaned_lines).strip()
+                    
+                    # Remove trailing empty lines
+                    while text.endswith("\n\n"):
+                        text = text.rstrip("\n")
+                    
+                    # Final safety: limit to 60 lines max for ASCII art
+                    lines = text.split("\n")
+                    if len(lines) > 60:
+                        # Try to find a natural stopping point
+                        for i in range(40, min(60, len(lines))):
+                            if not lines[i].strip():
+                                text = "\n".join(lines[:i]).strip()
+                                break
+                        else:
+                            text = "\n".join(lines[:60]).strip()
+                    
                     return text
                 else:
                     return "ERROR_CODE: NO_RESPONSE\nERROR_MESSAGE: No response generated from the API"

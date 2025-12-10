@@ -1,66 +1,40 @@
 """System prompts for ASCII generation tasks."""
 
-ASCII_ART_PROMPT = """You are an expert ASCII artist. Generate detailed ASCII art using only standard printable characters.
+ASCII_ART_PROMPT = """You are an expert ASCII artist. Generate ASCII art using only standard printable characters.
 
-CRITICAL ALIGNMENT RULES - READ CAREFULLY:
-1. ALL lines must have the EXACT SAME number of leading spaces - this is CRITICAL
-2. Count leading spaces on each line - they must match exactly
-3. The leftmost character of each line should align vertically with the leftmost character of other lines
-4. If the ears are at position X, the face should also start at position X (same leading spaces)
-5. Do NOT vary the leading spaces between lines - use consistent indentation throughout
-6. Visual alignment: imagine drawing a vertical line down the left edge - all parts should touch this line at the same horizontal position
+CRITICAL RULES:
+1. ALL lines must have the EXACT SAME number of leading spaces
+2. Output ONLY the ASCII art - NO explanations, NO descriptions, NO markdown
+3. Maximum 50 lines of output
+4. Maximum width: 80 characters
+5. Keep it concise and focused
 
-ALIGNMENT EXAMPLE (CORRECT):
-        /\\_/\\        <- 8 spaces
-       ( o.o )       <- 8 spaces (aligned!)
-        > ^ <        <- 8 spaces (aligned!)
-       /|   |\\       <- 8 spaces (aligned!)
+ALIGNMENT: All lines must have identical leading spaces.
 
-ALIGNMENT EXAMPLE (WRONG - DO NOT DO THIS):
-       /\\_/\\         <- 7 spaces
-        ( o.o )      <- 8 spaces (MISALIGNED!)
-
-Rules:
-1. Use character density for shading: ' ' (lightest) . : - = + * # % @ (darkest)
-2. Maximum width: 80 characters
-3. Use line breaks to create vertical structure
-4. Output ONLY the ASCII art, no explanations or markdown code blocks
-5. COUNT leading spaces on EVERY line - they must be IDENTICAL
-6. Make it visually striking and recognizable
-7. Do NOT wrap output in backticks or code blocks
-8. Before outputting, verify all lines have the same leading space count
-9. The entire drawing should be a cohesive, properly aligned unit
-
-Example format (ALL lines have 8 leading spaces):
+Example:
         /\\_/\\
        ( o.o )
         > ^ <
        /|   |\\
-      (_|   |_)
-        "-----"
 
-Notice: Every line starts at the same horizontal position (8 spaces).
+Output ONLY the art, nothing else.
 """
 
-CHART_PROMPT = """You are a data visualization expert specializing in terminal-based charts.
+CHART_PROMPT = """Generate terminal-based charts. Output ONLY the chart.
 
 Rules:
-1. Use block characters for bars: █ ▓ ▒ ░
-2. Use box-drawing for axes: ─ │ ┌ ┐ └ ┘ ├ ┤
-3. Include clear labels and values
-4. Maximum width: 80 characters
-5. Add a simple legend if needed
-6. Output ONLY the chart, no explanations or markdown code blocks
-7. Make sure bars are properly aligned
+1. Use block characters: █ ▓ ▒ ░
+2. Use box-drawing: ─ │ ┌ ┐ └ ┘
+3. Maximum width: 80 characters
+4. Maximum 30 lines
+5. Output ONLY the chart - NO explanations, NO markdown
 
-Example bar chart:
-Sales Report (Q1-Q4)
-┌────────────────────────────┐
-│ Q1 ████████ 100            │
-│ Q2 ████████████ 150        │
-│ Q3 █████████ 120           │
-│ Q4 ████████████████ 200    │
-└────────────────────────────┘
+Example:
+Sales Report
+┌────────────────────┐
+│ Q1 ████████ 100    │
+│ Q2 ████████████ 150│
+└────────────────────┘
 """
 
 def get_diagram_prompt(orientation: str = "top-to-bottom") -> str:
