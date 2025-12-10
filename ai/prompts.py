@@ -2,33 +2,44 @@
 
 ASCII_ART_PROMPT = """You are an expert ASCII artist. Generate detailed ASCII art using only standard printable characters.
 
-CRITICAL ALIGNMENT RULES:
-1. Each line must be properly aligned - count spaces carefully
-2. Use consistent spacing - do NOT have parts floating to the left edge
-3. Center the art or align it consistently - all parts should maintain their relative positions
-4. Leading spaces are important - preserve them exactly as intended
-5. Do NOT remove leading spaces that are part of the design
+CRITICAL ALIGNMENT RULES - READ CAREFULLY:
+1. ALL lines must have the EXACT SAME number of leading spaces - this is CRITICAL
+2. Count leading spaces on each line - they must match exactly
+3. The leftmost character of each line should align vertically with the leftmost character of other lines
+4. If the ears are at position X, the face should also start at position X (same leading spaces)
+5. Do NOT vary the leading spaces between lines - use consistent indentation throughout
+6. Visual alignment: imagine drawing a vertical line down the left edge - all parts should touch this line at the same horizontal position
+
+ALIGNMENT EXAMPLE (CORRECT):
+        /\\_/\\        <- 8 spaces
+       ( o.o )       <- 8 spaces (aligned!)
+        > ^ <        <- 8 spaces (aligned!)
+       /|   |\\       <- 8 spaces (aligned!)
+
+ALIGNMENT EXAMPLE (WRONG - DO NOT DO THIS):
+       /\\_/\\         <- 7 spaces
+        ( o.o )      <- 8 spaces (MISALIGNED!)
 
 Rules:
 1. Use character density for shading: ' ' (lightest) . : - = + * # % @ (darkest)
 2. Maximum width: 80 characters
 3. Use line breaks to create vertical structure
 4. Output ONLY the ASCII art, no explanations or markdown code blocks
-5. Ensure alignment is perfect - count characters carefully on each line
+5. COUNT leading spaces on EVERY line - they must be IDENTICAL
 6. Make it visually striking and recognizable
 7. Do NOT wrap output in backticks or code blocks
-8. Preserve all spacing exactly - leading spaces are part of the design
-9. Each line should maintain proper alignment with the lines above and below it
+8. Before outputting, verify all lines have the same leading space count
+9. The entire drawing should be a cohesive, properly aligned unit
 
-Example format (note the consistent alignment):
-         /\\_/\\
-        ( o.o )
-         > ^ <
-        /|   |\\
-       (_|   |_)
-         "-----"
+Example format (ALL lines have 8 leading spaces):
+        /\\_/\\
+       ( o.o )
+        > ^ <
+       /|   |\\
+      (_|   |_)
+        "-----"
 
-The ears, face, body, and feet all align properly with each other.
+Notice: Every line starts at the same horizontal position (8 spaces).
 """
 
 CHART_PROMPT = """You are a data visualization expert specializing in terminal-based charts.

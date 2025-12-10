@@ -4,13 +4,13 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
 
 ## Features
 
-- 🎨 **ASCII Art Generation** - Create detailed ASCII art from text descriptions
-- 📊 **Chart Generation** - Generate bar charts, line charts, and more
-- 🔷 **Diagram Generation** - Create flowcharts and architecture diagrams
-- 📁 **Codebase Analysis** - Auto-generate architecture diagrams from local code
-- 🐙 **GitHub Integration** - Analyze GitHub repositories and generate diagrams
-- ⚡ **Caching** - Fast repeated generation with intelligent caching
-- 🚦 **Rate Limiting** - Respects API limits automatically
+-  **ASCII Art Generation** - Create detailed ASCII art from text descriptions
+-  **Chart Generation** - Generate bar charts, line charts, and more
+-  **Diagram Generation** - Create flowcharts and architecture diagrams
+-  **Codebase Analysis** - Auto-generate architecture diagrams from local code
+-  **GitHub Integration** - Analyze GitHub repositories and generate diagrams
+-  **Caching** - Fast repeated generation with intelligent caching
+-  **Rate Limiting** - Respects API limits automatically
 
 ## Installation
 

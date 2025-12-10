@@ -39,39 +39,67 @@ class Renderer:
         if lines:
             # Calculate leading spaces for each non-empty line
             leading_spaces = []
-            for line in lines:
+            line_info = []
+            for i, line in enumerate(lines):
                 if line.strip():
-                    leading_spaces.append(len(line) - len(line.lstrip()))
+                    leading = len(line) - len(line.lstrip())
+                    leading_spaces.append(leading)
+                    line_info.append((i, leading, line))
             
-            if leading_spaces:
+            if leading_spaces and len(set(leading_spaces)) > 1:  # Multiple different indentations
+                from collections import Counter
+                leading_counts = Counter(leading_spaces)
                 min_leading = min(leading_spaces)
                 max_leading = max(leading_spaces)
                 
-                # If there's a significant misalignment (some lines at 0, others indented)
-                # and the difference is large, we likely have an alignment issue
-                has_zero_leading = 0 in leading_spaces
-                has_indented = max_leading > 5
+                # Filter out lines with 0 or very few spaces (likely misaligned parts)
+                # Focus on lines with substantial indentation (likely the main body)
+                substantial_indents = [ls for ls in leading_spaces if ls >= 3]
                 
-                if has_zero_leading and has_indented and max_leading - min_leading > 5:
-                    # Fix alignment: ensure all lines have at least some consistent base indentation
-                    # Find the most common leading space value (excluding 0)
-                    non_zero_leading = [ls for ls in leading_spaces if ls > 0]
-                    if non_zero_leading:
-                        # Use the minimum non-zero leading as the base
-                        base_indent = min(non_zero_leading)
-                        normalized_lines = []
-                        for line in lines:
-                            if line.strip():
-                                current_leading = len(line) - len(line.lstrip())
-                                if current_leading == 0:
-                                    # Add base indent to lines that have none
-                                    normalized_lines.append(" " * base_indent + line.lstrip())
+                if substantial_indents:
+                    # Use the most common substantial indentation as the base
+                    substantial_counts = Counter(substantial_indents)
+                    if substantial_counts:
+                        base_indent = substantial_counts.most_common(1)[0][0]
+                        
+                        # Align all lines to the base indent for consistent alignment
+                        # Only skip if variation is very small (1-2 spaces difference)
+                        if max_leading - min_leading > 1:
+                            normalized_lines = []
+                            for i, line in enumerate(lines):
+                                if line.strip():
+                                    current_leading = len(line) - len(line.lstrip())
+                                    
+                                    # Align all lines to base_indent for consistency
+                                    # Only preserve if it's exactly at base (within 1 space)
+                                    if abs(current_leading - base_indent) <= 1:
+                                        # Already aligned or very close, keep as is
+                                        normalized_lines.append(line)
+                                    else:
+                                        # Align to base
+                                        offset = base_indent - current_leading
+                                        normalized_lines.append(" " * max(0, offset) + line.lstrip())
                                 else:
-                                    # Keep existing indentation
-                                    normalized_lines.append(line)
+                                    normalized_lines.append("")
+                            content = "\n".join(normalized_lines)
+                else:
+                    # No substantial indents found, use median
+                    sorted_leading = sorted(leading_spaces)
+                    median_idx = len(sorted_leading) // 2
+                    median_leading = sorted_leading[median_idx]
+                    
+                    normalized_lines = []
+                    for line in lines:
+                        if line.strip():
+                            current_leading = len(line) - len(line.lstrip())
+                            offset = median_leading - current_leading
+                            if abs(offset) > 0:
+                                normalized_lines.append(" " * max(0, offset) + line.lstrip())
                             else:
-                                normalized_lines.append("")
-                        content = "\n".join(normalized_lines)
+                                normalized_lines.append(line)
+                        else:
+                            normalized_lines.append("")
+                    content = "\n".join(normalized_lines)
         
         if title:
             self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
