@@ -66,6 +66,7 @@ Generate ASCII art from a text prompt:
 python cli.py art "a cat wearing sunglasses"
 python cli.py art "a rocket ship"
 python cli.py art "Python logo"
+python cli.py art "a cat" --explain  # Get an explanation from Groq
 ```
 
 ### Charts
@@ -77,6 +78,7 @@ python cli.py chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
 python cli.py chart "line chart showing sales growth over 12 months"
 python cli.py chart "bar chart showing monthly sales: January=50, February=75, March=100, April=120, May=90" --provider groq
 python cli.py chart "line chart showing revenue growth over 12 months" --provider groq
+python cli.py chart "bar chart: Q1=100, Q2=150" --explain  # Get an explanation from Groq
 ```
 
 **Example Output:**
@@ -142,6 +144,14 @@ python cli.py clear-cache
 ```bash
 python cli.py art "prompt" --no-cache
 ```
+
+**Get explanations:**
+```bash
+python cli.py art "a cat" --explain
+python cli.py chart "bar chart: Q1=100, Q2=150" --explain
+```
+
+The `--explain` flag uses Groq to generate a brief explanation of the generated ASCII art or chart. This is useful for understanding complex visualizations or getting insights about the generated content. **Note:** Requires `GROQ_API_KEY` to be set in your `.env` file.
 
 ## Configuration
 

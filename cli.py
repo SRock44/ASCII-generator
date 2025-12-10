@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from ai.factory import create_ai_client
+from ai.groq_client import GroqClient
 from generators.ascii_art import ASCIIArtGenerator
 from generators.charts import ChartGenerator
 from generators.diagrams import DiagramGenerator
@@ -13,6 +14,7 @@ from parsers.github import GitHubParser
 from renderer import Renderer
 from cache import Cache
 from rate_limiter import RateLimiter
+import config
 
 
 @click.group()
@@ -22,26 +24,86 @@ def cli():
     pass
 
 
+def generate_explanation(content: str, content_type: str, original_prompt: str) -> str:
+    """
+    Generate an explanation of the generated ASCII art or chart using Groq.
+    
+    Args:
+        content: The generated ASCII art or chart content
+        content_type: Type of content ('art' or 'chart')
+        original_prompt: The original user prompt
+        
+    Returns:
+        Explanation text from Groq
+    """
+    try:
+        # Always use Groq for explanations
+        groq_client = GroqClient()
+        rate_limiter = RateLimiter()
+        
+        # Wait for rate limit
+        rate_limiter.wait_if_needed()
+        
+        # Create explanation prompt
+        if content_type == 'art':
+            explanation_prompt = f"""Please provide a brief, clear explanation of this ASCII art. 
+
+Original prompt: {original_prompt}
+
+ASCII Art:
+{content}
+
+Explain what the ASCII art depicts, its key features, and any notable artistic elements. Keep it concise (2-3 sentences)."""
+        else:  # chart
+            explanation_prompt = f"""Please provide a brief, clear explanation of this ASCII chart/diagram.
+
+Original prompt: {original_prompt}
+
+Chart/Diagram:
+{content}
+
+Explain what the chart/diagram shows, the data relationships, and key insights. Keep it concise (2-3 sentences) If the diagram is a codebase diagram, explain the codebase structure and the relationships between the codebase."""
+        
+        # Generate explanation
+        explanation = groq_client.generate(explanation_prompt)
+        
+        # Check for errors
+        if explanation.startswith("ERROR_CODE:"):
+            return "Unable to generate explanation. Please try again."
+        
+        return explanation.strip()
+    except Exception as e:
+        return f"Unable to generate explanation: {str(e)}"
+
+
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
 @click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--no-colors', is_flag=True, help='Disable color output (monochrome)')
-@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
+@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-def art(prompts, no_cache, no_colors, provider):
+@click.option('--explain', is_flag=True, help='Get an explanation of the generated art from Groq')
+@click.option('--live', is_flag=True, help='Show live progressive drawing animation as art is generated')
+def art(prompts, no_cache, no_colors, provider, explain, live):
     """Generate ASCII art from one or more text prompts.
     
     Examples:
       ascii-gen art "a cat wearing sunglasses"
       ascii-gen art "a cat" "a dog" "a bird" --provider groq
       ascii-gen art "a cat" --provider groq --no-cache --no-colors
+      ascii-gen art "a cat" --explain
     """
     try:
         renderer = Renderer()
         
+        # Check if Groq is available for explanations
+        if explain and not config.GROQ_API_KEY:
+            renderer.render_error("--explain requires GROQ_API_KEY to be set in .env")
+            sys.exit(1)
+        
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name)
+        ai_client = create_ai_client(provider_name, mode="art")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = ASCIIArtGenerator(ai_client, cache, rate_limiter)
@@ -51,21 +113,46 @@ def art(prompts, no_cache, no_colors, provider):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating ASCII art {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                renderer.render_loading("Generating ASCII art...")
-            
-            result = generator.generate(prompt, use_cache=not no_cache)
-            
-            renderer.clear_line()
-            # Check if result is an error
-            if result.startswith("ERROR_CODE:"):
-                renderer.render_error(result)
-                if len(prompts) > 1:
-                    continue  # Continue with next prompt
-                else:
-                    sys.exit(1)
-            else:
+                if not live:
+                    renderer.render_loading("Generating ASCII art...")
+
+            if live:
+                # Use live progressive rendering
                 title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
-                renderer.render_ascii(result, title=title, use_colors=not no_colors)
+                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
+                renderer.render_ascii_progressive(stream_generator, title=title, use_colors=not no_colors)
+
+                # For explanation, we need the full result
+                if explain:
+                    # Re-generate or get from cache (will be cached from streaming)
+                    result = generator.generate(prompt, use_cache=True)
+                    if not result.startswith("ERROR_CODE:"):
+                        renderer.render_loading("Generating explanation...")
+                        explanation = generate_explanation(result, 'art', prompt)
+                        renderer.clear_line()
+                        renderer.render_explanation(explanation, title="Explanation")
+            else:
+                # Traditional non-streaming rendering
+                result = generator.generate(prompt, use_cache=not no_cache)
+
+                renderer.clear_line()
+                # Check if result is an error
+                if result.startswith("ERROR_CODE:"):
+                    renderer.render_error(result)
+                    if len(prompts) > 1:
+                        continue  # Continue with next prompt
+                    else:
+                        sys.exit(1)
+                else:
+                    title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
+                    renderer.render_ascii(result, title=title, use_colors=not no_colors)
+
+                    # Generate explanation if requested
+                    if explain:
+                        renderer.render_loading("Generating explanation...")
+                        explanation = generate_explanation(result, 'art', prompt)
+                        renderer.clear_line()
+                        renderer.render_explanation(explanation, title="Explanation")
         
     except Exception as e:
         renderer = Renderer()
@@ -76,21 +163,29 @@ def art(prompts, no_cache, no_colors, provider):
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
 @click.option('--no-cache', is_flag=True, help='Disable caching for this request')
-@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
+@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-def chart(prompts, no_cache, provider):
+@click.option('--explain', is_flag=True, help='Get an explanation of the generated chart from Groq')
+@click.option('--live', is_flag=True, help='Show live progressive drawing animation as chart is generated')
+def chart(prompts, no_cache, provider, explain, live):
     """Generate a chart from one or more text prompts.
     
     Examples:
       ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
       ascii-gen chart "sales data" "revenue growth" --provider groq --no-cache
+      ascii-gen chart "bar chart: Q1=100, Q2=150" --explain
     """
     try:
         renderer = Renderer()
         
+        # Check if Groq is available for explanations
+        if explain and not config.GROQ_API_KEY:
+            renderer.render_error("--explain requires GROQ_API_KEY to be set in .env")
+            sys.exit(1)
+        
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name)
+        ai_client = create_ai_client(provider_name, mode="chart")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = ChartGenerator(ai_client, cache, rate_limiter)
@@ -100,21 +195,46 @@ def chart(prompts, no_cache, provider):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating chart {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                renderer.render_loading("Generating chart...")
-            
-            result = generator.generate(prompt, use_cache=not no_cache)
-            
-            renderer.clear_line()
-            # Check if result is an error
-            if result.startswith("ERROR_CODE:"):
-                renderer.render_error(result)
-                if len(prompts) > 1:
-                    continue  # Continue with next prompt
-                else:
-                    sys.exit(1)
-            else:
+                if not live:
+                    renderer.render_loading("Generating chart...")
+
+            if live:
+                # Use live progressive rendering
                 title = f"Chart {i}" if len(prompts) > 1 else "Chart"
-                renderer.render_ascii(result, title=title)
+                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
+                renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
+
+                # For explanation, we need the full result
+                if explain:
+                    # Re-generate or get from cache (will be cached from streaming)
+                    result = generator.generate(prompt, use_cache=True)
+                    if not result.startswith("ERROR_CODE:"):
+                        renderer.render_loading("Generating explanation...")
+                        explanation = generate_explanation(result, 'chart', prompt)
+                        renderer.clear_line()
+                        renderer.render_explanation(explanation, title="Explanation")
+            else:
+                # Traditional non-streaming rendering
+                result = generator.generate(prompt, use_cache=not no_cache)
+
+                renderer.clear_line()
+                # Check if result is an error
+                if result.startswith("ERROR_CODE:"):
+                    renderer.render_error(result)
+                    if len(prompts) > 1:
+                        continue  # Continue with next prompt
+                    else:
+                        sys.exit(1)
+                else:
+                    title = f"Chart {i}" if len(prompts) > 1 else "Chart"
+                    renderer.render_ascii(result, title=title)
+
+                    # Generate explanation if requested
+                    if explain:
+                        renderer.render_loading("Generating explanation...")
+                        explanation = generate_explanation(result, 'chart', prompt)
+                        renderer.clear_line()
+                        renderer.render_explanation(explanation, title="Explanation")
         
     except Exception as e:
         renderer = Renderer()
@@ -125,11 +245,12 @@ def chart(prompts, no_cache, provider):
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
 @click.option('--no-cache', is_flag=True, help='Disable caching for this request')
-@click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
+@click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False),
               default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
-@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
+@click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-def diagram(prompts, no_cache, orientation, provider):
+@click.option('--live', is_flag=True, help='Show live progressive drawing animation as diagram is generated')
+def diagram(prompts, no_cache, orientation, provider, live):
     """Generate a diagram from one or more text prompts.
     
     Examples:
@@ -147,7 +268,7 @@ def diagram(prompts, no_cache, orientation, provider):
         
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name)
+        ai_client = create_ai_client(provider_name, mode="diagram")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
@@ -157,21 +278,29 @@ def diagram(prompts, no_cache, orientation, provider):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating diagram {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                renderer.render_loading("Generating diagram...")
-            
-            result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
-            
-            renderer.clear_line()
-            # Check if result is an error
-            if result.startswith("ERROR_CODE:"):
-                renderer.render_error(result)
-                if len(prompts) > 1:
-                    continue  # Continue with next prompt
-                else:
-                    sys.exit(1)
-            else:
+                if not live:
+                    renderer.render_loading("Generating diagram...")
+
+            if live:
+                # Use live progressive rendering
                 title = f"Diagram {i}" if len(prompts) > 1 else "Diagram"
-                renderer.render_ascii(result, title=title)
+                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache, orientation=orientation)
+                renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
+            else:
+                # Traditional non-streaming rendering
+                result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
+
+                renderer.clear_line()
+                # Check if result is an error
+                if result.startswith("ERROR_CODE:"):
+                    renderer.render_error(result)
+                    if len(prompts) > 1:
+                        continue  # Continue with next prompt
+                    else:
+                        sys.exit(1)
+                else:
+                    title = f"Diagram {i}" if len(prompts) > 1 else "Diagram"
+                    renderer.render_ascii(result, title=title)
         
     except Exception as e:
         renderer = Renderer()
@@ -206,10 +335,10 @@ def codebase(path, no_cache, max_files, orientation, provider):
         
         # Generate diagram
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name)
+        ai_client = create_ai_client(provider_name, mode="diagram")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        
+
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
         
         # Normalize orientation values
@@ -269,10 +398,10 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
         
         # Generate diagram
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name)
+        ai_client = create_ai_client(provider_name, mode="diagram")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        
+
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
         
         # Normalize orientation values

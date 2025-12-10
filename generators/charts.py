@@ -26,11 +26,11 @@ class ChartGenerator:
     def generate(self, prompt: str, use_cache: bool = True) -> str:
         """
         Generate chart from prompt.
-        
+
         Args:
             prompt: User prompt describing the chart and data
             use_cache: Whether to use cache
-            
+
         Returns:
             Generated chart
         """
@@ -39,18 +39,58 @@ class ChartGenerator:
             cached = self.cache.get(prompt, "chart")
             if cached:
                 return cached
-        
+
         # Wait for rate limit
         self.rate_limiter.wait_if_needed()
-        
+
         # Generate using AI
         result = self.ai_client.generate(prompt, CHART_PROMPT)
-        
+
         # Cache result
         if use_cache:
             self.cache.set(prompt, "chart", result)
-        
+
         return result
+
+    def generate_stream(self, prompt: str, use_cache: bool = True):
+        """
+        Generate chart from prompt with streaming (yields chunks as they arrive).
+
+        Args:
+            prompt: User prompt describing the chart and data
+            use_cache: Whether to use cache
+
+        Yields:
+            Text chunks as they are generated
+        """
+        # Check cache first
+        if use_cache:
+            cached = self.cache.get(prompt, "chart")
+            if cached:
+                # Yield cached content in one chunk
+                yield cached
+                return
+
+        # Wait for rate limit
+        self.rate_limiter.wait_if_needed()
+
+        # Generate using AI with streaming
+        accumulated = ""
+        if hasattr(self.ai_client, 'generate_stream'):
+            for chunk in self.ai_client.generate_stream(prompt, CHART_PROMPT):
+                accumulated += chunk
+                yield chunk
+
+            # Cache result
+            if use_cache:
+                self.cache.set(prompt, "chart", accumulated)
+        else:
+            # Fallback to non-streaming if not supported
+            result = self.ai_client.generate(prompt, CHART_PROMPT)
+            if use_cache:
+                self.cache.set(prompt, "chart", result)
+            yield result
+
 
 
 

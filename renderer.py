@@ -2,8 +2,10 @@
 from typing import Optional
 from rich.console import Console
 from rich.text import Text
+from rich.live import Live
 import config
 import re
+import time
 
 
 class Renderer:
@@ -244,4 +246,141 @@ class Renderer:
     def clear_line(self):
         """Clear the current line."""
         self.console.print(" " * 80, end="\r")
+    
+    def render_explanation(self, explanation: str, title: Optional[str] = None):
+        """
+        Render explanation text.
+
+        Args:
+            explanation: Explanation text to render
+            title: Optional title for the explanation
+        """
+        if title:
+            self.console.print(f"\n[bold yellow]{title}[/bold yellow]\n")
+
+        # Format explanation nicely
+        self.console.print(f"[dim]{explanation}[/dim]")
+        self.console.print()  # Extra newline
+
+    def render_ascii_progressive(self, content_generator, title: Optional[str] = None, use_colors: bool = True, delay: float = 0.03):
+        """
+        Render ASCII art progressively as it's being generated (live drawing animation).
+
+        Args:
+            content_generator: Generator that yields chunks of text as they arrive
+            title: Optional title for the content
+            delay: Delay between rendering chunks (in seconds) for animation effect
+            use_colors: Whether to apply color highlighting
+        """
+        if title:
+            self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
+
+        accumulated_content = ""
+        lines_displayed = []
+
+        # Use Rich Live for smooth updates
+        with Live(console=self.console, refresh_per_second=30, transient=False) as live:
+            for chunk in content_generator:
+                accumulated_content += chunk
+
+                # Split by lines and render progressively
+                current_lines = accumulated_content.split("\n")
+
+                # Determine which lines are new or updated
+                display_text = Text()
+
+                for i, line in enumerate(current_lines):
+                    # For incomplete last line (might get more content), show it dimmed
+                    if i == len(current_lines) - 1 and not accumulated_content.endswith("\n"):
+                        # Last incomplete line - show dimmed
+                        if use_colors:
+                            colored_line = self._apply_ascii_colors_to_line(line, is_incomplete=True)
+                            display_text.append(colored_line)
+                        else:
+                            display_text.append(line, style="dim white")
+                    else:
+                        # Complete line
+                        if use_colors:
+                            colored_line = self._apply_ascii_colors_to_line(line, is_incomplete=False)
+                            display_text.append(colored_line)
+                        else:
+                            display_text.append(line, style="white")
+
+                    # Add newline except for last line
+                    if i < len(current_lines) - 1:
+                        display_text.append("\n")
+
+                # Update the live display
+                live.update(display_text)
+
+                # Small delay for animation effect
+                time.sleep(delay)
+
+        # Final render with cleanup
+        self.console.print()  # Extra newline
+
+    def _apply_ascii_colors_to_line(self, line: str, is_incomplete: bool = False) -> Text:
+        """
+        Apply colors to a single line of ASCII art.
+
+        Args:
+            line: Single line of ASCII content
+            is_incomplete: Whether this line is still being generated
+
+        Returns:
+            Rich Text object with colors applied
+        """
+        text = Text()
+
+        # Box-drawing characters (Unicode box-drawing set)
+        box_chars = '┌┐└┘├┤┬┴┼─│'
+        # Regular ASCII box alternatives
+        ascii_box_chars = ['/', '\\', '|', '_', '-', '=', '+']
+
+        base_style = "dim white" if is_incomplete else "white"
+
+        i = 0
+        while i < len(line):
+            char = line[i]
+
+            # Box-drawing characters (Unicode box-drawing) - cyan
+            if char in box_chars:
+                text.append(char, style="dim cyan" if is_incomplete else "cyan")
+            # Arrows - yellow
+            elif char in ['→', '←', '↑', '↓']:
+                text.append(char, style="dim yellow" if is_incomplete else "yellow")
+            # ASCII box characters - cyan (for structural elements)
+            elif char in ascii_box_chars:
+                # Check if it's likely a structural element vs text content
+                is_structural = False
+                if i == 0 or i == len(line) - 1:
+                    is_structural = True
+                elif char in ['/', '\\']:
+                    # Check if surrounded by spaces or other structural chars
+                    prev = line[i-1] if i > 0 else ' '
+                    next = line[i+1] if i < len(line) - 1 else ' '
+                    if prev in [' ', '_', '\\', '/', '|'] or next in [' ', '_', '\\', '/', '|']:
+                        is_structural = True
+                elif char == '|':
+                    # Vertical line - structural if not surrounded by alphanumeric
+                    prev = line[i-1] if i > 0 else ' '
+                    next = line[i+1] if i < len(line) - 1 else ' '
+                    if not (prev.isalnum() and next.isalnum()):
+                        is_structural = True
+                elif char in ['_', '-', '=']:
+                    # Horizontal lines - structural if at edges or repeated
+                    if i < 2 or i > len(line) - 3 or line.count(char) > 3:
+                        is_structural = True
+
+                if is_structural:
+                    text.append(char, style="dim cyan" if is_incomplete else "cyan")
+                else:
+                    text.append(char, style=base_style)
+            # All text content
+            else:
+                text.append(char, style=base_style)
+
+            i += 1
+
+        return text
 
