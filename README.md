@@ -131,10 +131,17 @@ Create a `.env` file in the project root:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3-pro-preview
 CACHE_ENABLED=true
 CACHE_DIR=.cache
 ```
+
+**Model Options:**
+- `gemini-2.5-pro` - Recommended: Good balance of capability and availability (default)
+- `gemini-3-pro-preview` - Latest preview model (requires paid tier, may have availability issues)
+- `gemini-2.5-flash` - Fast, efficient model
+- `gemini-1.5-flash` - Free tier compatible
+- `gemini-1.5-pro` - More capable model
 
 ## Project Structure
 

@@ -76,92 +76,39 @@ def get_diagram_prompt(orientation: str = "top-to-bottom") -> str:
     orientation = orientation.lower()
     
     if orientation == "left-to-right" or orientation == "ltr" or orientation == "horizontal":
-        return """You are a technical diagram expert. Generate flowcharts and architecture diagrams using ASCII.
-
-CRITICAL: This diagram should flow LEFT TO RIGHT (horizontal orientation).
-
-BOX FORMATTING RULES (CRITICAL):
-1. Use proper box-drawing characters: ┌┐└┘├┤┬┴┼─│
-2. Every box must be COMPLETE with all four corners: ┌ (top-left), ┐ (top-right), └ (bottom-left), ┘ (bottom-right)
-3. Use ─ for horizontal lines and │ for vertical lines
-4. Boxes must be properly closed - no missing corners or broken lines
-5. Text inside boxes should be surrounded by │ on left and right
-6. Ensure consistent box height - all boxes in a row should have the same height
-7. Use proper spacing between boxes and arrows
+        return """Generate ASCII flowchart flowing LEFT TO RIGHT.
 
 Rules:
-1. Use box-drawing characters: ─│┌┐└┘├┤┬┴┼
-2. Use horizontal arrows for flow: → (preferred) or ──→
-3. Keep boxes aligned horizontally and properly connected
-4. Maximum width: 80 characters (use efficiently for horizontal flow)
-5. Add labels inside boxes (centered, with proper padding)
-6. Output ONLY the diagram, no explanations or markdown code blocks
-7. Ensure all connections are clean and aligned horizontally
-8. Arrows should be properly formatted: Use → for connections between boxes
-9. Boxes should be arranged in a horizontal sequence from left to right
-10. Each box must be a complete rectangle with all corners and sides
+- Use box-drawing: ┌┐└┘─│ (complete boxes with all 4 corners)
+- Flow: → between boxes
+- Max width: 80 chars
+- Text inside boxes, white. Box outlines colored.
+- Output ONLY diagram, no markdown.
 
-Example horizontal flowchart (note complete boxes):
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│    Start    │ ──→ │   Process   │ ──→ │     End     │
-└─────────────┘     └─────────────┘     └─────────────┘
-
-For branching, use vertical connections when needed, but main flow should be left-to-right.
+Example:
+┌─────────┐ → ┌─────────┐ → ┌─────────┐
+│  Start  │   │ Process │   │   End   │
+└─────────┘   └─────────┘   └─────────┘
 """
     else:
         # Default: top-to-bottom
-        return """You are a technical diagram expert. Generate flowcharts and architecture diagrams using ASCII.
-
-CRITICAL: This diagram should flow TOP TO BOTTOM (vertical orientation).
-
-BOX FORMATTING RULES (CRITICAL):
-1. Use proper box-drawing characters: ┌┐└┘├┤┬┴┼─│
-2. Every box must be COMPLETE with all four corners: ┌ (top-left), ┐ (top-right), └ (bottom-left), ┘ (bottom-right)
-3. Use ─ for horizontal lines and │ for vertical lines
-4. Boxes must be properly closed - no missing corners or broken lines
-5. Text inside boxes should be surrounded by │ on left and right
-6. Ensure consistent box width - all boxes should have proper alignment
-7. Use proper spacing between boxes and arrows
+        return """Generate ASCII flowchart flowing TOP TO BOTTOM.
 
 Rules:
-1. Use box-drawing characters: ─│┌┐└┘├┤┬┴┼
-2. Use vertical arrows for flow: ↓ (preferred) or │
-3. Keep boxes aligned vertically and properly connected
-4. Maximum width: 80 characters
-5. Add labels inside boxes (centered, with proper padding)
-6. Output ONLY the diagram, no explanations or markdown code blocks
-7. Ensure all connections are clean and aligned vertically
-8. Arrows should be properly formatted: Use ↓ for connections between boxes, │ for vertical lines
-9. Boxes should be arranged in a vertical sequence from top to bottom
-10. Each box must be a complete rectangle with all corners and sides
-11. When branching, use proper box-drawing characters (├, ┤, ┬, ┴) to connect branches cleanly
+- Use box-drawing: ┌┐└┘─│├┤┬┴ (complete boxes with all 4 corners)
+- Flow: ↓ between boxes, │ for vertical lines
+- Max width: 80 chars
+- Text inside boxes, white. Box outlines colored.
+- Output ONLY diagram, no markdown.
 
-Example vertical flowchart (note complete boxes):
-    ┌─────────────┐
-    │    Start    │
-    └──────┬──────┘
-           │
-           ↓
-    ┌─────────────┐
-    │   Process   │
-    └──────┬──────┘
-           │
-           ↓
-    ┌──────┴──────┐
-    │             │
-    ↓             ↓
-┌─────────┐   ┌─────────┐
-│   Yes   │   │   No    │
-└────┬────┘   └────┬────┘
-     │             │
-     └──────┬──────┘
-            │
-            ↓
-     ┌─────────────┐
-     │     End      │
-     └─────────────┘
-
-Use proper box-drawing characters (│, ─, └, ┘, ┌, ┐, ├, ┤, ┬, ┴) for clean connections.
+Example:
+┌─────────┐
+│  Start  │
+└────┬────┘
+     ↓
+┌─────────┐
+│ Process │
+└─────────┘
 """
 
 # Default prompt (backward compatibility)

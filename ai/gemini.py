@@ -86,7 +86,7 @@ class GeminiClient(AIClient):
                         full_prompt,
                         generation_config={
                             "temperature": 0.7,
-                            "max_output_tokens": 2048,
+                            "max_output_tokens": 4096,  # Increased for longer diagrams
                         }
                     )
             except TimeoutError as e:
@@ -94,21 +94,68 @@ class GeminiClient(AIClient):
                 error_msg = f"ERROR_CODE: {e.error_code}\nERROR_MESSAGE: {e.message}"
                 return error_msg
             
+            # Check for finish reasons (safety blocks, etc.)
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'finish_reason'):
+                    finish_reason = candidate.finish_reason
+                    # Finish reason 1 = STOP (normal), 2 = MAX_TOKENS, 3 = SAFETY, 4 = RECITATION
+                    if finish_reason == 3:  # SAFETY
+                        error_msg = "Response was blocked by safety filters. Try rephrasing your prompt."
+                        if hasattr(candidate, 'safety_ratings'):
+                            safety_issues = []
+                            for rating in candidate.safety_ratings:
+                                if rating.probability.name in ['HIGH', 'MEDIUM']:
+                                    safety_issues.append(f"{rating.category.name}: {rating.probability.name}")
+                            if safety_issues:
+                                error_msg += f" Safety concerns: {', '.join(safety_issues)}"
+                        return f"ERROR_CODE: SAFETY_BLOCKED\nERROR_MESSAGE: {error_msg}"
+                    elif finish_reason == 2:  # MAX_TOKENS
+                        # Response was cut off, but we can still return what we have
+                        pass
+                    elif finish_reason == 4:  # RECITATION
+                        return "ERROR_CODE: RECITATION_BLOCKED\nERROR_MESSAGE: Response was blocked due to potential recitation of copyrighted content."
+            
             # Extract text from response
-            if response.text:
-                # Clean up any markdown code blocks that might wrap the output
-                text = response.text.strip()
-                if text.startswith("```"):
-                    # Remove markdown code blocks
-                    lines = text.split("\n")
-                    if lines[0].startswith("```"):
-                        lines = lines[1:]
-                    if lines[-1].strip() == "```":
-                        lines = lines[:-1]
-                    text = "\n".join(lines).strip()
-                return text
-            else:
-                return "ERROR_CODE: NO_RESPONSE\nERROR_MESSAGE: No response generated from the API"
+            try:
+                if response.text:
+                    # Clean up any markdown code blocks that might wrap the output
+                    text = response.text.strip()
+                    if text.startswith("```"):
+                        # Remove markdown code blocks
+                        lines = text.split("\n")
+                        if lines[0].startswith("```"):
+                            lines = lines[1:]
+                        if lines[-1].strip() == "```":
+                            lines = lines[:-1]
+                        text = "\n".join(lines).strip()
+                    return text
+                else:
+                    # Check if we have candidates but no text
+                    if hasattr(response, 'candidates') and response.candidates:
+                        candidate = response.candidates[0]
+                        if hasattr(candidate, 'finish_reason'):
+                            finish_reason = candidate.finish_reason
+                            if finish_reason == 3:
+                                return "ERROR_CODE: SAFETY_BLOCKED\nERROR_MESSAGE: Response was blocked by safety filters. The prompt may have triggered content safety checks."
+                    return "ERROR_CODE: NO_RESPONSE\nERROR_MESSAGE: No response generated from the API"
+            except Exception as text_error:
+                # Handle the specific error about response.text requiring valid Part
+                error_str = str(text_error)
+                if "response.text" in error_str and "finish_reason" in error_str:
+                    # Extract finish reason if available
+                    if hasattr(response, 'candidates') and response.candidates:
+                        candidate = response.candidates[0]
+                        if hasattr(candidate, 'finish_reason'):
+                            finish_reason = candidate.finish_reason
+                            if finish_reason == 3:
+                                return "ERROR_CODE: SAFETY_BLOCKED\nERROR_MESSAGE: Response was blocked by safety filters. Try rephrasing your prompt or using different wording."
+                            elif finish_reason == 2:
+                                return "ERROR_CODE: MAX_TOKENS\nERROR_MESSAGE: Response exceeded maximum token limit. Try a shorter or simpler prompt."
+                            elif finish_reason == 4:
+                                return "ERROR_CODE: RECITATION_BLOCKED\nERROR_MESSAGE: Response was blocked due to potential recitation of copyrighted content."
+                    return f"ERROR_CODE: INVALID_RESPONSE\nERROR_MESSAGE: {error_str}"
+                raise
         except Exception as e:
             # Check for specific Google API exceptions
             error_type = type(e).__name__
