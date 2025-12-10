@@ -1,6 +1,6 @@
 # ASCII Generator
 
-A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using Google's Gemini AI. Create beautiful terminal visualizations from natural language prompts or by analyzing codebases.
+A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using AI (Gemini or Groq). Create beautiful terminal visualizations from natural language prompts or by analyzing codebases.
 
 ## Features
 
@@ -34,13 +34,16 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
 4. **Set up environment variables:**
    ```bash
    cp .env.example .env
-   # Edit .env and add your Gemini API key
+   # Edit .env and add your API key(s)
    ```
 
-   Or set the API key directly in `.env`:
+   Set at least one API key in `.env`:
    ```
-   GEMINI_API_KEY=your_api_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GROQ_API_KEY=your_groq_api_key_here  # Optional
    ```
+
+   You can use either Gemini or Groq (or both). If both are set, Gemini will be used by default (auto-selection).
 
 ## Usage
 
@@ -72,7 +75,15 @@ Generate terminal-based charts:
 ```bash
 python cli.py chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
 python cli.py chart "line chart showing sales growth over 12 months"
+python cli.py chart "bar chart showing monthly sales: January=50, February=75, March=100, April=120, May=90" --provider groq
+python cli.py chart "line chart showing revenue growth over 12 months" --provider groq
 ```
+
+**Example Output:**
+
+![Chart Examples](images/01.png)
+
+*Example charts generated with Groq showing bar charts and line charts with proper formatting and visual representation.*
 
 ### Diagrams
 
@@ -131,17 +142,24 @@ Create a `.env` file in the project root:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-3-pro-preview
+GEMINI_MODEL=gemini-2.5-pro
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=moonshotai/kimi-k2-instruct-0905
 CACHE_ENABLED=true
 CACHE_DIR=.cache
 ```
 
 **Model Options:**
+
+Gemini Models:
 - `gemini-2.5-pro` - Recommended: Good balance of capability and availability (default)
 - `gemini-3-pro-preview` - Latest preview model (requires paid tier, may have availability issues)
 - `gemini-2.5-flash` - Fast, efficient model
 - `gemini-1.5-flash` - Free tier compatible
 - `gemini-1.5-pro` - More capable model
+
+Groq Models:
+- `moonshotai/kimi-k2-instruct-0905` - Kimi K2 model (default)
 
 ## Project Structure
 
@@ -152,6 +170,8 @@ ASCII-Generator/
 ├── ai/
 │   ├── client.py       # Abstract AI client interface
 │   ├── gemini.py       # Google Gemini implementation
+│   ├── groq_client.py  # Groq API implementation
+│   ├── factory.py      # AI client factory (auto-select provider)
 │   └── prompts.py      # System prompts
 ├── generators/
 │   ├── ascii_art.py    # ASCII art generator
@@ -185,6 +205,7 @@ The rate limiter automatically handles these limits. If you hit the limit, the t
 - `click` - CLI framework
 - `rich` - Terminal formatting and colors
 - `google-generativeai` - Google Gemini SDK
+- `groq` - Groq API SDK (for Kimi K2 model)
 - `python-dotenv` - Environment variable management
 - `requests` - HTTP requests
 - `PyGithub` - GitHub API client
