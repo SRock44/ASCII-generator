@@ -63,39 +63,109 @@ Sales Report (Q1-Q4)
 └────────────────────────────┘
 """
 
-DIAGRAM_PROMPT = """You are a technical diagram expert. Generate flowcharts and architecture diagrams using ASCII.
+def get_diagram_prompt(orientation: str = "top-to-bottom") -> str:
+    """
+    Get diagram prompt with specified orientation.
+    
+    Args:
+        orientation: "top-to-bottom" or "left-to-right"
+        
+    Returns:
+        Formatted prompt string
+    """
+    orientation = orientation.lower()
+    
+    if orientation == "left-to-right" or orientation == "ltr" or orientation == "horizontal":
+        return """You are a technical diagram expert. Generate flowcharts and architecture diagrams using ASCII.
+
+CRITICAL: This diagram should flow LEFT TO RIGHT (horizontal orientation).
+
+BOX FORMATTING RULES (CRITICAL):
+1. Use proper box-drawing characters: ┌┐└┘├┤┬┴┼─│
+2. Every box must be COMPLETE with all four corners: ┌ (top-left), ┐ (top-right), └ (bottom-left), ┘ (bottom-right)
+3. Use ─ for horizontal lines and │ for vertical lines
+4. Boxes must be properly closed - no missing corners or broken lines
+5. Text inside boxes should be surrounded by │ on left and right
+6. Ensure consistent box height - all boxes in a row should have the same height
+7. Use proper spacing between boxes and arrows
 
 Rules:
 1. Use box-drawing characters: ─│┌┐└┘├┤┬┴┼
-2. Use arrows for flow: → ← ↑ ↓
-3. Keep boxes aligned and properly connected
-4. Maximum width: 80 characters
-5. Add labels inside or beside boxes
+2. Use horizontal arrows for flow: → (preferred) or ──→
+3. Keep boxes aligned horizontally and properly connected
+4. Maximum width: 80 characters (use efficiently for horizontal flow)
+5. Add labels inside boxes (centered, with proper padding)
 6. Output ONLY the diagram, no explanations or markdown code blocks
-7. Ensure all connections are clean and aligned
+7. Ensure all connections are clean and aligned horizontally
+8. Arrows should be properly formatted: Use → for connections between boxes
+9. Boxes should be arranged in a horizontal sequence from left to right
+10. Each box must be a complete rectangle with all corners and sides
 
-Example flowchart:
-    ┌─────────┐
-    │  Start  │
-    └────┬────┘
-         ↓
-    ┌─────────┐
-    │ Process │
-    └────┬────┘
-         ↓
-   ┌─────┴─────┐
-   │           │
-   ↓           ↓
-┌──────┐   ┌──────┐
-│ Yes  │   │  No  │
-└──┬───┘   └───┬──┘
-   │           │
-   └─────┬─────┘
-         ↓
-    ┌─────────┐
-    │   End   │
-    └─────────┘
+Example horizontal flowchart (note complete boxes):
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    Start    │ ──→ │   Process   │ ──→ │     End     │
+└─────────────┘     └─────────────┘     └─────────────┘
+
+For branching, use vertical connections when needed, but main flow should be left-to-right.
 """
+    else:
+        # Default: top-to-bottom
+        return """You are a technical diagram expert. Generate flowcharts and architecture diagrams using ASCII.
+
+CRITICAL: This diagram should flow TOP TO BOTTOM (vertical orientation).
+
+BOX FORMATTING RULES (CRITICAL):
+1. Use proper box-drawing characters: ┌┐└┘├┤┬┴┼─│
+2. Every box must be COMPLETE with all four corners: ┌ (top-left), ┐ (top-right), └ (bottom-left), ┘ (bottom-right)
+3. Use ─ for horizontal lines and │ for vertical lines
+4. Boxes must be properly closed - no missing corners or broken lines
+5. Text inside boxes should be surrounded by │ on left and right
+6. Ensure consistent box width - all boxes should have proper alignment
+7. Use proper spacing between boxes and arrows
+
+Rules:
+1. Use box-drawing characters: ─│┌┐└┘├┤┬┴┼
+2. Use vertical arrows for flow: ↓ (preferred) or │
+3. Keep boxes aligned vertically and properly connected
+4. Maximum width: 80 characters
+5. Add labels inside boxes (centered, with proper padding)
+6. Output ONLY the diagram, no explanations or markdown code blocks
+7. Ensure all connections are clean and aligned vertically
+8. Arrows should be properly formatted: Use ↓ for connections between boxes, │ for vertical lines
+9. Boxes should be arranged in a vertical sequence from top to bottom
+10. Each box must be a complete rectangle with all corners and sides
+11. When branching, use proper box-drawing characters (├, ┤, ┬, ┴) to connect branches cleanly
+
+Example vertical flowchart (note complete boxes):
+    ┌─────────────┐
+    │    Start    │
+    └──────┬──────┘
+           │
+           ↓
+    ┌─────────────┐
+    │   Process   │
+    └──────┬──────┘
+           │
+           ↓
+    ┌──────┴──────┐
+    │             │
+    ↓             ↓
+┌─────────┐   ┌─────────┐
+│   Yes   │   │   No    │
+└────┬────┘   └────┬────┘
+     │             │
+     └──────┬──────┘
+            │
+            ↓
+     ┌─────────────┐
+     │     End      │
+     └─────────────┘
+
+Use proper box-drawing characters (│, ─, └, ┘, ┌, ┐, ├, ┤, ┬, ┴) for clean connections.
+"""
+
+# Default prompt (backward compatibility)
+DIAGRAM_PROMPT = get_diagram_prompt("top-to-bottom")
 
 CODEBASE_ANALYSIS_PROMPT = """You are a software architect. Analyze the provided codebase structure and create an architecture diagram.
 

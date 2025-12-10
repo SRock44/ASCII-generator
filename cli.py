@@ -94,14 +94,23 @@ def chart(prompt, no_cache):
 @cli.command()
 @click.argument('prompt', required=True)
 @click.option('--no-cache', is_flag=True, help='Disable caching')
-def diagram(prompt, no_cache):
+@click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+def diagram(prompt, no_cache, orientation):
     """Generate a diagram from a text prompt.
     
     Example: ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
+    Example: ascii-gen diagram "workflow" --orientation left-to-right
     """
     try:
         renderer = Renderer()
         renderer.render_loading("Generating diagram...")
+        
+        # Normalize orientation values
+        if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
+            orientation = 'top-to-bottom'
+        elif orientation.lower() in ['l2r', 'left-to-right', 'horizontal', 'lr']:
+            orientation = 'left-to-right'
         
         # Initialize components
         ai_client = GeminiClient()
@@ -109,7 +118,7 @@ def diagram(prompt, no_cache):
         rate_limiter = RateLimiter()
         
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
-        result = generator.generate(prompt, use_cache=not no_cache)
+        result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
         
         renderer.clear_line()
         # Check if result is an error
@@ -129,7 +138,9 @@ def diagram(prompt, no_cache):
 @click.argument('path', type=click.Path(exists=True), default='.')
 @click.option('--no-cache', is_flag=True, help='Disable caching')
 @click.option('--max-files', default=50, help='Maximum files to analyze')
-def codebase(path, no_cache, max_files):
+@click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+def codebase(path, no_cache, max_files, orientation):
     """Generate an architecture diagram from a local codebase.
     
     Example: ascii-gen codebase /path/to/project
@@ -153,9 +164,15 @@ def codebase(path, no_cache, max_files):
         
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
         
+        # Normalize orientation values
+        if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
+            orientation = 'top-to-bottom'
+        elif orientation.lower() in ['l2r', 'left-to-right', 'horizontal', 'lr']:
+            orientation = 'left-to-right'
+        
         # Create prompt with codebase summary
         prompt = f"Create an architecture diagram for this codebase:\n\n{summary}"
-        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True)
+        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True, orientation=orientation)
         
         renderer.clear_line()
         # Check if result is an error
@@ -176,7 +193,9 @@ def codebase(path, no_cache, max_files):
 @click.option('--no-cache', is_flag=True, help='Disable caching')
 @click.option('--max-files', default=50, help='Maximum files to analyze')
 @click.option('--token', help='GitHub personal access token (or set GITHUB_TOKEN env var)')
-def github(repo_url, no_cache, max_files, token):
+@click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
+              default='top-to-bottom', help='Diagram orientation: top-to-bottom (default) or left-to-right')
+def github(repo_url, no_cache, max_files, token, orientation):
     """Generate an architecture diagram from a GitHub repository.
     
     Example: ascii-gen github owner/repo-name
@@ -205,9 +224,15 @@ def github(repo_url, no_cache, max_files, token):
         
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
         
+        # Normalize orientation values
+        if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
+            orientation = 'top-to-bottom'
+        elif orientation.lower() in ['l2r', 'left-to-right', 'horizontal', 'lr']:
+            orientation = 'left-to-right'
+        
         # Create prompt with codebase summary
         prompt = f"Create an architecture diagram for this codebase:\n\n{summary}"
-        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True)
+        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True, orientation=orientation)
         
         renderer.clear_line()
         # Check if result is an error

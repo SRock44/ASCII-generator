@@ -116,6 +116,7 @@ class Renderer:
     def _apply_ascii_colors(self, content: str) -> Text:
         """
         Apply colors to ASCII art based on character patterns.
+        For diagrams: box outlines are colored, text inside boxes is white.
         
         Args:
             content: ASCII art content
@@ -125,6 +126,11 @@ class Renderer:
         """
         text = Text()
         lines = content.split("\n")
+        
+        # Box-drawing characters (Unicode box-drawing set)
+        box_chars = '┌┐└┘├┤┬┴┼─│'
+        # Regular ASCII box alternatives
+        ascii_box_chars = ['/', '\\', '|', '_', '-', '=', '+']
         
         for line_idx, line in enumerate(lines):
             if not line.strip():
@@ -136,10 +142,15 @@ class Renderer:
             while i < len(line):
                 char = line[i]
                 
-                # Color patterns based on character type
-                if char in ['/', '\\', '|', '_', '-', '=']:
-                    # Structural elements - cyan/blue
+                # Box-drawing characters (diagram boxes) - cyan
+                if char in box_chars:
                     text.append(char, style="cyan")
+                # ASCII box characters - cyan
+                elif char in ascii_box_chars:
+                    text.append(char, style="cyan")
+                # Arrows - yellow for diagrams, red for art
+                elif char in ['→', '←', '↑', '↓']:
+                    text.append(char, style="yellow")
                 elif char in ['(', ')', '[', ']', '{', '}', '<', '>']:
                     # Brackets/parentheses - yellow
                     text.append(char, style="yellow")
@@ -161,17 +172,15 @@ class Renderer:
                 elif char in ['"', "'", '`']:
                     # Quotes/strings - magenta
                     text.append(char, style="magenta")
-                elif char in ['~', '^']:
+                elif char in ['~']:
                     # Decorative - bright magenta
                     text.append(char, style="bright_magenta")
-                elif char.isalnum():
-                    # Letters/numbers - white
+                elif char.isalnum() or char in [' ', '.', ',', ':', ';', '!', '?', '(', ')', '-']:
+                    # Text content (letters, numbers, punctuation, spaces) - always white
+                    # This ensures text inside boxes stays white
                     text.append(char, style="white")
-                elif char == ' ':
-                    # Spaces - keep as is (no color)
-                    text.append(char)
                 else:
-                    # Default - white
+                    # Default - white for any other character (likely text)
                     text.append(char, style="white")
                 
                 i += 1

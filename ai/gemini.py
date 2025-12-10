@@ -112,12 +112,20 @@ class GeminiClient(AIClient):
         except Exception as e:
             # Check for specific Google API exceptions
             error_type = type(e).__name__
+            error_str = str(e).lower()
             
-            if "BlockedPrompt" in error_type or "blocked" in str(e).lower():
+            # Check for quota/rate limit errors
+            if "429" in str(e) or "quota" in error_str or "rate limit" in error_str or "exceeded" in error_str:
+                error_code = "QUOTA_EXCEEDED"
+                error_msg = str(e) or "API quota exceeded. Please check your plan and billing details."
+                if "429" in str(e):
+                    error_msg += "\n\nTip: The free tier has rate limits. Wait a few minutes and try again, or check your usage at https://ai.dev/usage?tab=rate-limit"
+                return f"ERROR_CODE: {error_code}\nERROR_MESSAGE: {error_msg}"
+            elif "BlockedPrompt" in error_type or "blocked" in error_str:
                 error_code = "BLOCKED_PROMPT"
                 error_msg = str(e) or "The prompt was blocked by the safety filters"
                 return f"ERROR_CODE: {error_code}\nERROR_MESSAGE: {error_msg}"
-            elif "StopCandidate" in error_type or "stopped" in str(e).lower():
+            elif "StopCandidate" in error_type or "stopped" in error_str:
                 error_code = "STOP_CANDIDATE"
                 error_msg = str(e) or "Generation was stopped"
                 return f"ERROR_CODE: {error_code}\nERROR_MESSAGE: {error_msg}"
@@ -130,8 +138,15 @@ class GeminiClient(AIClient):
                 status_code = getattr(e, 'status_code', None)
                 reason = getattr(e, 'reason', None)
                 
-                if status_code:
+                # Check error message for status codes
+                if "429" in str(e):
+                    error_code = "QUOTA_EXCEEDED"
+                    error_message = f"{error_message}\n\nTip: API quota exceeded. Wait a few minutes and try again."
+                elif status_code:
                     error_code = f"HTTP_{status_code}"
+                    if status_code == 429:
+                        error_code = "QUOTA_EXCEEDED"
+                        error_message = f"{error_message}\n\nTip: Rate limit exceeded. Wait a few minutes and try again."
                 if reason:
                     error_message = f"{error_message} (Reason: {reason})"
                 

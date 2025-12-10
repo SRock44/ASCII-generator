@@ -23,7 +23,7 @@ class DiagramGenerator:
         self.rate_limiter = rate_limiter or RateLimiter()
         self.renderer = Renderer()
     
-    def generate(self, prompt: str, use_cache: bool = True, is_codebase: bool = False) -> str:
+    def generate(self, prompt: str, use_cache: bool = True, is_codebase: bool = False, orientation: str = "top-to-bottom") -> str:
         """
         Generate diagram from prompt.
         
@@ -31,12 +31,13 @@ class DiagramGenerator:
             prompt: User prompt describing the diagram
             use_cache: Whether to use cache
             is_codebase: Whether this is a codebase analysis diagram
+            orientation: Diagram orientation - "top-to-bottom" or "left-to-right"
             
         Returns:
             Generated diagram
         """
-        # Check cache first
-        cache_key = "diagram_codebase" if is_codebase else "diagram"
+        # Check cache first (include orientation in cache key)
+        cache_key = f"{'diagram_codebase' if is_codebase else 'diagram'}_{orientation}"
         if use_cache:
             cached = self.cache.get(prompt, cache_key)
             if cached:
@@ -46,7 +47,11 @@ class DiagramGenerator:
         self.rate_limiter.wait_if_needed()
         
         # Choose appropriate prompt
-        system_prompt = CODEBASE_ANALYSIS_PROMPT if is_codebase else DIAGRAM_PROMPT
+        if is_codebase:
+            system_prompt = CODEBASE_ANALYSIS_PROMPT
+        else:
+            from ai.prompts import get_diagram_prompt
+            system_prompt = get_diagram_prompt(orientation)
         
         # Generate using AI
         result = self.ai_client.generate(prompt, system_prompt)
