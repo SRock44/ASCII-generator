@@ -9,7 +9,7 @@ ALLOWED CHARACTERS:
 - Spaces for positioning
 
 CRITICAL RULES (STRICTLY ENFORCED):
-1. ALL lines MUST have the EXACT SAME number of leading spaces - count carefully!
+1. ALL lines MUST start at column 0 (NO leading spaces) OR all have IDENTICAL leading spaces
 2. Output ONLY the ASCII art - ABSOLUTELY NO explanations, descriptions, or markdown
 3. NEVER use ``` code blocks or any markdown formatting
 4. Maximum 50 lines of output (HARD LIMIT)
@@ -17,14 +17,15 @@ CRITICAL RULES (STRICTLY ENFORCED):
 6. NO trailing whitespace at end of lines
 7. Use ONLY characters from the allowed list above - no Unicode, no emoji, no special characters
 8. Keep it concise and focused on the requested subject
+9. Every line must be COMPLETE - no truncated lines
 
-ALIGNMENT VERIFICATION: Before outputting, verify every line has identical leading spaces.
+ALIGNMENT VERIFICATION: Check that EVERY line starts at the same column position.
 
-Example (notice all lines have 8 leading spaces):
-        /\\_/\\
-       ( o.o )
-        > ^ <
-       /|   |\\
+Example of CORRECT alignment (all lines start at column 0):
+/\\_/\\
+( o.o )
+> ^ <
+/|   |\\
 
 OUTPUT FORMAT: Pure ASCII art only. No text before or after. No explanations.
 """
@@ -42,20 +43,27 @@ CRITICAL RULES (STRICTLY ENFORCED):
 1. Use ONLY characters from the allowed list above
 2. Maximum width: 80 characters per line (HARD LIMIT)
 3. Maximum 30 lines (HARD LIMIT)
-4. Output ONLY the chart - ABSOLUTELY NO explanations, descriptions, or markdown
-5. NEVER use ``` code blocks or any markdown formatting
-6. NO trailing whitespace at end of lines
-7. All box corners must be complete (use all 4: ┌ ┐ └ ┘)
-8. Labels and data must be clear and aligned
+4. NEVER use ``` code blocks or any markdown formatting
+5. NO trailing whitespace at end of lines
+6. All box corners must be complete (use all 4: ┌ ┐ └ ┘)
+7. Labels, bars, and numbers MUST be perfectly aligned using spaces
+8. Each row inside the chart must have IDENTICAL structure and spacing
+9. Use consistent spacing: label + space + bar + space + number
+10. ALL lines must start at column 0 (no leading spaces)
+11. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces before the closing │
+12. The closing │ must be at the SAME column position for every line in the box
 
-OUTPUT FORMAT: Pure chart only. No text before or after. No explanations.
+ALIGNMENT: Ensure bars and numbers align vertically AND all box lines have equal width.
 
-Example:
+Example (notice perfect alignment - all bars start at same column, all numbers align):
 Sales Report
-┌────────────────────┐
-│ Q1 ████████ 100    │
-│ Q2 ████████████ 150│
-└────────────────────┘
+┌────────────────────────┐
+│ Q1  ████████     100   │
+│ Q2  ████████████ 150   │
+│ Q3  ████████     200   │
+└────────────────────────┘
+
+OUTPUT FORMAT: Pure chart only. You may add a brief explanation AFTER the chart if needed.
 """
 
 def get_diagram_prompt(orientation: str = "top-to-bottom") -> str:
@@ -82,16 +90,21 @@ ALLOWED CHARACTERS:
 
 CRITICAL RULES (STRICTLY ENFORCED):
 1. Use ONLY characters from the allowed list above
-2. Every box MUST have all 4 corners: ┌ ┐ └ ┘
-3. Flow direction: → between boxes (horizontal flow)
-4. Maximum width: 80 characters per line (HARD LIMIT)
-5. Maximum 50 lines (HARD LIMIT)
-6. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
-7. NEVER use ``` code blocks
-8. NO trailing whitespace at end of lines
-9. Text inside boxes should be centered and clear
+2. Every box MUST have all 4 corners: ┌ ┐ └ ┘ - NO EXCEPTIONS
+3. Every box MUST be COMPLETE - bottom border MUST be present
+4. Flow direction: → between boxes (horizontal flow)
+5. Maximum width: 80 characters per line (HARD LIMIT)
+6. Maximum 50 lines (HARD LIMIT)
+7. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
+8. NEVER use ``` code blocks
+9. NO trailing whitespace at end of lines
+10. Text inside boxes should be centered and clear
+11. COMPLETE the entire diagram - do not stop mid-box
+12. ALL lines must start at the same column (no varying indentation)
+13. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces to align the right edges
+14. Top border (┌─┐), content lines (│ │), and bottom border (└─┘) must all be SAME WIDTH
 
-OUTPUT FORMAT: Pure diagram only. No text before or after. No explanations.
+OUTPUT FORMAT: Pure diagram only. You may add a brief explanation AFTER the diagram if needed.
 
 Example:
 ┌─────────┐ → ┌─────────┐ → ┌─────────┐
@@ -111,17 +124,22 @@ ALLOWED CHARACTERS:
 
 CRITICAL RULES (STRICTLY ENFORCED):
 1. Use ONLY characters from the allowed list above
-2. Every box MUST have all 4 corners: ┌ ┐ └ ┘
-3. Flow direction: ↓ between boxes, │ for vertical connections
-4. Maximum width: 80 characters per line (HARD LIMIT)
-5. Maximum 50 lines (HARD LIMIT)
-6. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
-7. NEVER use ``` code blocks
-8. NO trailing whitespace at end of lines
-9. Text inside boxes should be centered and clear
-10. Use ┬ and ┴ for T-junctions when connecting vertical flow to boxes
+2. Every box MUST have all 4 corners: ┌ ┐ └ ┘ - NO EXCEPTIONS
+3. Every box MUST be COMPLETE - bottom border MUST be present
+4. Flow direction: ↓ between boxes, │ for vertical connections
+5. Maximum width: 80 characters per line (HARD LIMIT)
+6. Maximum 50 lines (HARD LIMIT)
+7. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
+8. NEVER use ``` code blocks
+9. NO trailing whitespace at end of lines
+10. Text inside boxes should be centered and clear
+11. Use ┬ and ┴ for T-junctions when connecting vertical flow to boxes
+12. COMPLETE the entire diagram - do not stop mid-box
+13. ALL lines must start at the same column (no varying indentation)
+14. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces to align the right edges
+15. Top border (┌─┐), content lines (│ │), and bottom border (└─┘) must all be SAME WIDTH
 
-OUTPUT FORMAT: Pure diagram only. No text before or after. No explanations.
+OUTPUT FORMAT: Pure diagram only. You may add a brief explanation AFTER the diagram if needed.
 
 Example:
 ┌─────────┐
@@ -154,14 +172,19 @@ First, understand the relationships between files/modules, then generate a clean
 CRITICAL RULES (STRICTLY ENFORCED):
 1. Use ONLY characters from the allowed list above
 2. Use box-drawing characters (┌┐└┘─│) and arrows (→←↑↓)
-3. Every box MUST have all 4 corners complete
-4. Maximum width: 80 characters per line (HARD LIMIT)
-5. Maximum 50 lines (HARD LIMIT)
-6. Keep it simple and focused on high-level architecture
-7. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
-8. NEVER use ``` code blocks
-9. NO trailing whitespace
+3. Every box MUST have all 4 corners complete: ┌ ┐ └ ┘ - NO EXCEPTIONS
+4. Every box MUST be COMPLETE - bottom border MUST be present
+5. Maximum width: 80 characters per line (HARD LIMIT)
+6. Maximum 50 lines (HARD LIMIT)
+7. Keep it simple and focused on high-level architecture
+8. Output ONLY the diagram - ABSOLUTELY NO explanations or markdown
+9. NEVER use ``` code blocks
+10. NO trailing whitespace at end of lines
+11. COMPLETE the entire diagram - do not stop mid-box
+12. ALL lines must start at the same column (no varying indentation)
+13. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces to align the right edges
+14. Top border (┌─┐), content lines (│ │), and bottom border (└─┘) must all be SAME WIDTH
 
-OUTPUT FORMAT: Pure diagram only. No text before or after. No explanations.
+OUTPUT FORMAT: Pure diagram only. You may add a brief explanation AFTER the diagram if needed to clarify the architecture.
 """
 

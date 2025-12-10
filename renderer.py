@@ -262,31 +262,32 @@ class Renderer:
         self.console.print(f"[dim]{explanation}[/dim]")
         self.console.print()  # Extra newline
 
-    def render_ascii_progressive(self, content_generator, title: Optional[str] = None, use_colors: bool = True, delay: float = 0.03):
+    def render_ascii_progressive(self, content_generator, title: Optional[str] = None, use_colors: bool = True, delay: float = 0.0):
         """
         Render ASCII art progressively as it's being generated (live drawing animation).
+        OPTIMIZED: Minimal delay for maximum speed, only validated content is shown.
 
         Args:
-            content_generator: Generator that yields chunks of text as they arrive
+            content_generator: Generator that yields VALIDATED chunks of text as they arrive
             title: Optional title for the content
-            delay: Delay between rendering chunks (in seconds) for animation effect
+            delay: Optional delay between rendering chunks (default: 0.0 for maximum speed)
             use_colors: Whether to apply color highlighting
         """
         if title:
             self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
 
         accumulated_content = ""
-        lines_displayed = []
 
-        # Use Rich Live for smooth updates
-        with Live(console=self.console, refresh_per_second=30, transient=False) as live:
+        # Use Rich Live for smooth updates (60fps for maximum smoothness)
+        with Live(console=self.console, refresh_per_second=60, transient=False) as live:
             for chunk in content_generator:
+                # Chunk is already validated by StreamingValidator
                 accumulated_content += chunk
 
                 # Split by lines and render progressively
                 current_lines = accumulated_content.split("\n")
 
-                # Determine which lines are new or updated
+                # Build display text
                 display_text = Text()
 
                 for i, line in enumerate(current_lines):
@@ -310,11 +311,12 @@ class Renderer:
                     if i < len(current_lines) - 1:
                         display_text.append("\n")
 
-                # Update the live display
+                # Update the live display immediately (no artificial delay)
                 live.update(display_text)
 
-                # Small delay for animation effect
-                time.sleep(delay)
+                # Optional tiny delay for animation effect (default: none for max speed)
+                if delay > 0:
+                    time.sleep(delay)
 
         # Final render with cleanup
         self.console.print()  # Extra newline

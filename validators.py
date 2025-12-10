@@ -80,7 +80,7 @@ class ASCIIValidator:
             self.max_lines = 50
             self.max_width = 80
 
-    def validate(self, content: str, strict: bool = True) -> ValidationResult:
+    def validate(self, content: str, strict: bool = False) -> ValidationResult:
         """
         Validate ASCII content against strictness rules.
 
@@ -209,16 +209,20 @@ class ASCIIValidator:
         if not content:
             return content
 
-        # Remove markdown code blocks
+        # Remove markdown code blocks AGGRESSIVELY
         content = content.strip()
-        if content.startswith("```"):
-            lines = content.split("\n")
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            content = "\n".join(lines).strip()
 
+        # Remove ALL lines that contain only ```
+        lines = content.split("\n")
+        lines = [line for line in lines if line.strip() != "```" and not line.strip().startswith("```")]
+
+        # Remove language identifiers like ```ascii or ```text
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() in ["```", "```\n"]:
+            lines = lines[:-1]
+
+        content = "\n".join(lines).strip()
         lines = content.split("\n")
 
         # Remove trailing whitespace from all lines
@@ -228,23 +232,22 @@ class ASCIIValidator:
         while lines and not lines[-1].strip():
             lines.pop()
 
-        # Fix alignment to most common indentation (STRICT - always fix any variation)
+        # Fix alignment to MINIMUM indentation (STRICT - normalize to leftmost position)
         non_empty_lines = [line for line in lines if line.strip()]
         if non_empty_lines:
-            from collections import Counter
             leading_spaces = [len(line) - len(line.lstrip()) for line in non_empty_lines]
 
-            # Use most common indentation as base
-            counter = Counter(leading_spaces)
-            most_common_indent = counter.most_common(1)[0][0]
+            # Use MINIMUM indentation as base (leftmost position)
+            # This preserves the leftmost content and normalizes everything to it
+            min_indent = min(leading_spaces)
 
-            # STRICT: Fix ANY variation in leading spaces (not just >2)
+            # STRICT: Fix ANY variation in leading spaces
             if max(leading_spaces) - min(leading_spaces) > 0:
                 fixed_lines = []
                 for line in lines:
                     if line.strip():
-                        # Normalize to most common indent
-                        fixed_lines.append(" " * most_common_indent + line.lstrip())
+                        # Normalize to minimum indent (leftmost)
+                        fixed_lines.append(" " * min_indent + line.lstrip())
                     else:
                         fixed_lines.append("")
                 lines = fixed_lines
@@ -262,15 +265,110 @@ class ASCIIValidator:
             cleaned_lines.append(cleaned_line)
         lines = cleaned_lines
 
-        # Truncate to max lines
+        # Truncate to max lines (but ensure we don't cut off box borders)
         if len(lines) > self.max_lines:
-            lines = lines[:self.max_lines]
+            # Check if last few lines might be box borders
+            if self.mode in ["chart", "diagram"]:
+                # Look for closing box border in last 3 lines
+                has_closing_border = False
+                for i in range(max(0, len(lines) - 3), len(lines)):
+                    if any(char in lines[i] for char in ["└", "┘", "─"]):
+                        has_closing_border = True
+                        break
 
-        # Truncate lines to max width
-        lines = [line[:self.max_width] if len(line) > self.max_width else line
-                 for line in lines]
+                if has_closing_border:
+                    # Keep a bit more to preserve the closing border
+                    lines = lines[:min(self.max_lines + 2, len(lines))]
+                else:
+                    lines = lines[:self.max_lines]
+            else:
+                lines = lines[:self.max_lines]
+
+        # Normalize box widths - ensure all lines in a box have the same width
+        if self.mode in ["chart", "diagram"]:
+            lines = self._normalize_box_widths(lines)
+
+        # Truncate lines to max width (but don't cut box borders)
+        truncated_lines = []
+        for line in lines:
+            if len(line) > self.max_width:
+                # Check if this looks like a box line
+                if self.mode in ["chart", "diagram"] and any(char in line for char in ["│", "┤", "┘", "└"]):
+                    # Don't truncate box lines - keep them intact
+                    truncated_lines.append(line)
+                else:
+                    truncated_lines.append(line[:self.max_width])
+            else:
+                truncated_lines.append(line)
+        lines = truncated_lines
 
         return "\n".join(lines)
+
+    def _normalize_box_widths(self, lines: List[str]) -> List[str]:
+        """
+        Normalize box widths - ensure all lines within a box have equal width.
+        Detects boxes and pads shorter lines to match the widest line.
+
+        Args:
+            lines: List of lines
+
+        Returns:
+            List of lines with normalized box widths
+        """
+        if not lines:
+            return lines
+
+        normalized = []
+        in_box = False
+        box_start = -1
+        box_lines = []
+
+        for i, line in enumerate(lines):
+            # Detect box start
+            if "┌" in line or (in_box and "│" in line):
+                if not in_box:
+                    in_box = True
+                    box_start = i
+                    box_lines = [line]
+                else:
+                    box_lines.append(line)
+
+                # Detect box end
+                if "└" in line or "┘" in line:
+                    # Normalize this box
+                    max_width = max(len(l) for l in box_lines)
+
+                    # Pad all box lines to max width
+                    for j, box_line in enumerate(box_lines):
+                        if len(box_line) < max_width:
+                            # Check if line ends with │ or similar
+                            if box_line.rstrip().endswith("│"):
+                                # Pad before the closing │
+                                content = box_line.rstrip()[:-1]
+                                padding_needed = max_width - len(box_line)
+                                normalized.append(content + " " * padding_needed + "│")
+                            else:
+                                # Just pad at the end
+                                normalized.append(box_line + " " * (max_width - len(box_line)))
+                        else:
+                            normalized.append(box_line)
+
+                    in_box = False
+                    box_lines = []
+            else:
+                # Not in a box
+                if in_box:
+                    # Box was incomplete, just add what we have
+                    normalized.extend(box_lines)
+                    in_box = False
+                    box_lines = []
+                normalized.append(line)
+
+        # Handle any remaining incomplete box
+        if box_lines:
+            normalized.extend(box_lines)
+
+        return normalized
 
     def validate_and_clean(self, content: str, strict: bool = False) -> Tuple[str, ValidationResult]:
         """
