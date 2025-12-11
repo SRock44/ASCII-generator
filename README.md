@@ -1,5 +1,7 @@
 # ASCII Generator
 
+Expected Alpha Testing: January 2026
+
 A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using AI (Gemini or Groq). Create beautiful terminal visualizations from natural language prompts or by analyzing codebases.
 
 ## Features

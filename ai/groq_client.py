@@ -191,6 +191,9 @@ class GroqClient(AIClient):
                                 # Only yield if there's validated content (invalid chars are stripped)
                                 if validated_chunk:
                                     yield validated_chunk
+                    
+                    # Stream completed - ensure generator exits cleanly
+                    return
 
             except TimeoutError as e:
                 # Format error with code and message

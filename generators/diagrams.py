@@ -1,4 +1,5 @@
 """Diagram generator for flowcharts and architecture diagrams."""
+from typing import Optional
 from ai.client import AIClient
 from ai.prompts import DIAGRAM_PROMPT, CODEBASE_ANALYSIS_PROMPT
 from cache import Cache
@@ -9,7 +10,7 @@ from renderer import Renderer
 class DiagramGenerator:
     """Generator for flowcharts and architecture diagrams."""
     
-    def __init__(self, ai_client: AIClient, cache: Cache = None, rate_limiter: RateLimiter = None):
+    def __init__(self, ai_client: AIClient, cache: Optional[Cache] = None, rate_limiter: Optional[RateLimiter] = None):
         """
         Initialize diagram generator.
         

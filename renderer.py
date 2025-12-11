@@ -293,62 +293,109 @@ class Renderer:
         accumulated_content = ""
 
         # Use Rich Live for smooth updates (60fps for maximum smoothness)
-        with Live(console=self.console, refresh_per_second=60, transient=False) as live:
-            for chunk in content_generator:
-                # Chunk is already validated by StreamingValidator
-                accumulated_content += chunk
+        try:
+            with Live(console=self.console, refresh_per_second=60, transient=False) as live:
+                try:
+                    for chunk in content_generator:
+                        # Check for errors
+                        if chunk and chunk.startswith("ERROR_CODE:"):
+                            # Error occurred, render it and exit
+                            error_lines = chunk.split("\n")
+                            error_display = Text()
+                            for line in error_lines:
+                                error_display.append(line, style="red")
+                                error_display.append("\n")
+                            live.update(error_display)
+                            break
+                        
+                        # Chunk is already validated by StreamingValidator
+                        accumulated_content += chunk
 
-                # Split by lines and render progressively
-                # Colorizer will handle stripping color hints when it parses them
-                current_lines = accumulated_content.split("\n")
+                        # Split by lines and render progressively
+                        # Colorizer will handle stripping color hints when it parses them
+                        current_lines = accumulated_content.split("\n")
 
-                # Build display text
-                display_text = Text()
+                        # Build display text
+                        display_text = Text()
 
-                # Find where color hints section starts (if present)
-                color_section_start_idx = None
-                for idx, line in enumerate(current_lines):
-                    if "###COLORS###" in line:
-                        color_section_start_idx = idx
-                        break
-                
-                for i, line in enumerate(current_lines):
-                    # Skip lines that are part of the color hints section
-                    if color_section_start_idx is not None and i >= color_section_start_idx:
-                        continue  # Don't display color hints section
+                        # Find where color hints section starts (if present)
+                        color_section_start_idx = None
+                        for idx, line in enumerate(current_lines):
+                            if "###COLORS###" in line:
+                                color_section_start_idx = idx
+                                break
+                        
+                        for i, line in enumerate(current_lines):
+                            # Skip lines that are part of the color hints section
+                            if color_section_start_idx is not None and i >= color_section_start_idx:
+                                continue  # Don't display color hints section
+                            
+                            # Strip color hints marker if it appears in the line itself
+                            if "###COLORS###" in line:
+                                line = line.split("###COLORS###")[0].strip()
+                                if not line:
+                                    continue  # Skip empty lines after stripping
+                            
+                            # For incomplete last line (might get more content), show it dimmed
+                            if i == len(current_lines) - 1 and not accumulated_content.endswith("\n") and color_section_start_idx is None:
+                                # Last incomplete line - show dimmed (only if not in color section)
+                                if use_colors:
+                                    colored_line = self.colorizer.colorize_line(line, i, is_incomplete=True, accumulated_content=accumulated_content)
+                                    display_text.append(colored_line)
+                                else:
+                                    display_text.append(line, style="dim white")
+                            else:
+                                # Complete line
+                                if use_colors:
+                                    colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False, accumulated_content=accumulated_content)
+                                    display_text.append(colored_line)
+                                else:
+                                    display_text.append(line, style="white")
+
+                            # Add newline except for last line
+                            if i < len(current_lines) - 1:
+                                display_text.append("\n")
+
+                        # Update the live display immediately (no artificial delay)
+                        live.update(display_text)
+
+                        # Optional tiny delay for animation effect (default: none for max speed)
+                        if delay > 0:
+                            time.sleep(delay)
                     
-                    # Strip color hints marker if it appears in the line itself
-                    if "###COLORS###" in line:
-                        line = line.split("###COLORS###")[0].strip()
-                        if not line:
-                            continue  # Skip empty lines after stripping
-                    
-                    # For incomplete last line (might get more content), show it dimmed
-                    if i == len(current_lines) - 1 and not accumulated_content.endswith("\n") and color_section_start_idx is None:
-                        # Last incomplete line - show dimmed (only if not in color section)
-                        if use_colors:
-                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=True, accumulated_content=accumulated_content)
-                            display_text.append(colored_line)
-                        else:
-                            display_text.append(line, style="dim white")
-                    else:
-                        # Complete line
-                        if use_colors:
-                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False, accumulated_content=accumulated_content)
-                            display_text.append(colored_line)
-                        else:
-                            display_text.append(line, style="white")
-
-                    # Add newline except for last line
-                    if i < len(current_lines) - 1:
-                        display_text.append("\n")
-
-                # Update the live display immediately (no artificial delay)
-                live.update(display_text)
-
-                # Optional tiny delay for animation effect (default: none for max speed)
-                if delay > 0:
-                    time.sleep(delay)
+                    # Final render of complete content after stream ends
+                    # This ensures the final state is displayed even if stream ended abruptly
+                    if accumulated_content.strip() and not accumulated_content.startswith("ERROR_CODE:"):
+                        # Strip color hints for final display
+                        final_content = accumulated_content
+                        if "###COLORS###" in final_content:
+                            final_content = final_content.split("###COLORS###")[0].strip()
+                        
+                        if final_content.strip():
+                            final_lines = final_content.split("\n")
+                            final_display = Text()
+                            for i, line in enumerate(final_lines):
+                                # Skip color hints section
+                                if "###COLORS###" in line:
+                                    break
+                                if use_colors:
+                                    colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False, accumulated_content=accumulated_content)
+                                    final_display.append(colored_line)
+                                else:
+                                    final_display.append(line, style="white")
+                                if i < len(final_lines) - 1:
+                                    final_display.append("\n")
+                            live.update(final_display)
+                except StopIteration:
+                    # Generator exhausted - this is normal
+                    pass
+                except Exception as e:
+                    # Log error but don't block
+                    import sys
+                    print(f"Error during progressive rendering: {e}", file=sys.stderr)
+        finally:
+            # Ensure Live context is properly closed
+            pass
 
         # Final render with cleanup
         self.console.print()  # Extra newline

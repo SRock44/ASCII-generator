@@ -322,7 +322,12 @@ class ASCIIValidator:
 
         # Remove repetitive pattern lines (like | | repeated 50 times)
         # For art mode, be more conservative to preserve structure
+        # For charts, be lenient - pie charts and bar charts can have legitimate repetition
         if self.mode == "art":
+            lines = self._remove_repetitive_patterns_conservative(lines)
+        elif self.mode == "chart":
+            # Charts can have repetitive patterns (pie chart slices, bar chart rows)
+            # Only remove EXTREME repetition (15+ identical lines)
             lines = self._remove_repetitive_patterns_conservative(lines)
         else:
             lines = self._remove_repetitive_patterns(lines)
@@ -801,9 +806,13 @@ class StreamingValidator:
         self.accumulated += cleaned_chunk
 
         # Check for repetitive patterns in real-time
+        # For charts, be more lenient - don't stop on legitimate chart patterns
         if self._detect_repetition():
-            self.stopped = True
-            return ""  # Stop yielding content
+            # Only stop if we have substantial content (prevent stopping too early)
+            if len(self.accumulated.strip()) > 50:  # At least 50 chars before stopping
+                self.stopped = True
+                return ""  # Stop yielding content
+            # Otherwise, continue - might be legitimate chart structure
 
         return cleaned_chunk
 
@@ -812,6 +821,7 @@ class StreamingValidator:
         Detect if we're getting repetitive content in real-time.
         STRICT: Stops on excessive repetition (6+ identical lines).
         Ensures quality output and prevents broken/infinite loops.
+        For charts: More lenient to allow legitimate chart patterns.
 
         Returns:
             True if excessive repetition detected, False otherwise
@@ -819,6 +829,25 @@ class StreamingValidator:
         # Split accumulated content into lines
         lines = self.accumulated.split("\n")
 
+        # For charts, be more lenient - charts can have repetitive patterns legitimately
+        if self.mode == "chart":
+            # Need at least 10 lines to detect repetition in charts
+            if len(lines) < 10:
+                return False
+            
+            recent_lines = [line.strip() for line in lines[-12:] if line.strip()]
+            if len(recent_lines) < 10:
+                return False
+            
+            # Normalize lines (remove all spacing)
+            normalized = [''.join(line.split()) for line in recent_lines[-10:]]
+            
+            # Only stop on EXTREME repetition for charts (10+ identical lines)
+            if normalized and len(set(normalized)) == 1 and normalized[0]:
+                return True
+            return False
+        
+        # For art/diagrams: original strict logic
         # Need at least 6 lines to detect repetition
         if len(lines) < 6:
             return False

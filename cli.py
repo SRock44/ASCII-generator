@@ -127,15 +127,18 @@ Explain what the chart/diagram shows, the data relationships, and key insights. 
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--explain', is_flag=True, help='Get an explanation of the generated art from Groq')
-@click.option('--live', is_flag=True, help='Show live progressive drawing animation as art is generated')
-def art(prompts, no_cache, no_colors, provider, explain, live):
+@click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
+def art(prompts, no_cache, no_colors, provider, explain, no_live):
     """Generate ASCII art from one or more text prompts.
+    
+    Live progressive rendering is enabled by default. Use --no-live to disable.
     
     Examples:
       ascii-gen art "a cat wearing sunglasses"
       ascii-gen art "a cat" "a dog" "a bird" --provider groq
       ascii-gen art "a cat" --provider groq --no-cache --no-colors
       ascii-gen art "a cat" --explain
+      ascii-gen art "a cat" --no-live  # Use traditional rendering
     """
     try:
         # Check if Groq is available for explanations (use temp renderer for errors)
@@ -157,10 +160,10 @@ def art(prompts, no_cache, no_colors, provider, explain, live):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating ASCII art {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                if not live:
+                if no_live:
                     renderer.render_loading("Generating ASCII art...")
 
-            if live:
+            if not no_live:
                 # Use live progressive rendering
                 title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
                 stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
@@ -209,14 +212,17 @@ def art(prompts, no_cache, no_colors, provider, explain, live):
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--explain', is_flag=True, help='Get an explanation of the generated chart from Groq')
-@click.option('--live', is_flag=True, help='Show live progressive drawing animation as chart is generated')
-def chart(prompts, no_cache, provider, explain, live):
+@click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
+def chart(prompts, no_cache, provider, explain, no_live):
     """Generate a chart from one or more text prompts.
+
+    Live progressive rendering is enabled by default. Use --no-live to disable.
 
     Examples:
       ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
       ascii-gen chart "sales data" "revenue growth" --provider groq --no-cache
       ascii-gen chart "bar chart: Q1=100, Q2=150" --explain
+      ascii-gen chart "bar chart: Q1=100" --no-live  # Use traditional rendering
     """
     try:
         # Check if Groq is available for explanations
@@ -238,14 +244,29 @@ def chart(prompts, no_cache, provider, explain, live):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating chart {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                if not live:
+                if no_live:
                     renderer.render_loading("Generating chart...")
 
-            if live:
+            if not no_live:
                 # Use live progressive rendering
                 title = f"Chart {i}" if len(prompts) > 1 else "Chart"
-                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
-                renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
+                try:
+                    stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
+                    renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
+                except KeyboardInterrupt:
+                    renderer.clear_line()
+                    renderer.render_error("Generation interrupted by user")
+                    if len(prompts) > 1:
+                        continue
+                    else:
+                        sys.exit(1)
+                except Exception as e:
+                    renderer.clear_line()
+                    renderer.render_error(f"Error during chart generation: {str(e)}")
+                    if len(prompts) > 1:
+                        continue
+                    else:
+                        sys.exit(1)
 
                 # For explanation, we need the full result
                 if explain:
@@ -291,13 +312,16 @@ def chart(prompts, no_cache, provider, explain, live):
               default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-@click.option('--live', is_flag=True, help='Show live progressive drawing animation as diagram is generated')
-def diagram(prompts, no_cache, orientation, provider, live):
+@click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
+def diagram(prompts, no_cache, orientation, provider, no_live):
     """Generate a diagram from one or more text prompts.
+
+    Live progressive rendering is enabled by default. Use --no-live to disable.
 
     Examples:
       ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
       ascii-gen diagram "workflow" "auth flow" --orientation left-to-right --provider groq --no-cache
+      ascii-gen diagram "flowchart" --no-live  # Use traditional rendering
     """
     try:
         # Normalize orientation values
@@ -311,7 +335,7 @@ def diagram(prompts, no_cache, orientation, provider, live):
         ai_client = create_ai_client(provider_name, mode="diagram")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
-        generator = DiagramGenerator(ai_client, cache, rate_limiter)
+        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
 
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
@@ -320,10 +344,10 @@ def diagram(prompts, no_cache, orientation, provider, live):
             if len(prompts) > 1:
                 renderer.render_info(f"Generating diagram {i}/{len(prompts)}: {prompt[:50]}...")
             else:
-                if not live:
+                if no_live:
                     renderer.render_loading("Generating diagram...")
 
-            if live:
+            if not no_live:
                 # Use live progressive rendering
                 title = f"Diagram {i}" if len(prompts) > 1 else "Diagram"
                 stream_generator = generator.generate_stream(prompt, use_cache=not no_cache, orientation=orientation)
@@ -380,7 +404,7 @@ def codebase(path, no_cache, max_files, orientation, provider):
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
 
-        generator = DiagramGenerator(ai_client, cache, rate_limiter)
+        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
         
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
@@ -442,7 +466,7 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
 
-        generator = DiagramGenerator(ai_client, cache, rate_limiter)
+        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
         
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:

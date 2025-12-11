@@ -117,6 +117,11 @@ ALLOWED CHARACTERS:
 - Numbers: 0-9
 - Symbols: . , : - + % $ # @ ( ) [ ] (space)
 
+CHART TYPES:
+- Bar charts: Use █ characters for bars, align vertically
+- Pie charts: Use circular patterns with ░▒▓█ characters for slices, show percentages clearly
+- Line charts: Use characters to show trends over time
+
 CRITICAL RULES (STRICTLY ENFORCED):
 1. Use ONLY characters from the allowed list above
 2. Maximum width: 80 characters per line (HARD LIMIT)
@@ -130,15 +135,32 @@ CRITICAL RULES (STRICTLY ENFORCED):
 10. ALL lines must start at column 0 (no leading spaces)
 11. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces before the closing │
 12. The closing │ must be at the SAME column position for every line in the box
+13. For pie charts: Create clear circular representation with visible slices and labels
+14. COMPLETE the chart - ensure all data is represented and the chart is properly closed
 
 ALIGNMENT: Ensure bars and numbers align vertically AND all box lines have equal width.
 
-Example (notice perfect alignment - all bars start at same column, all numbers align):
+Example bar chart (notice perfect alignment - all bars start at same column, all numbers align):
 Sales Report
 ┌────────────────────────┐
 │ Q1  ████████     100   │
 │ Q2  ████████████ 150   │
 │ Q3  ████████     200   │
+└────────────────────────┘
+
+Example pie chart (circular representation with clear slices):
+Revenue by Month
+┌────────────────────────┐
+│      ░░░░░░░          │
+│    ░░▒▒▒▒▒▒░░        │
+│   ░▒▓▓▓▓▓▓▓▓▒░       │
+│  ░▒▓████████▓▒░      │
+│   ░▒▓▓▓▓▓▓▓▓▒░       │
+│    ░░▒▒▒▒▒▒░░        │
+│      ░░░░░░░          │
+│                       │
+│ Sep: 20%  Oct: 24%   │
+│ Nov: 40%              │
 └────────────────────────┘
 
 OUTPUT FORMAT:
