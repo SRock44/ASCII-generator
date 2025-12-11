@@ -12,51 +12,65 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
 -  **Caching** - Fast repeated generation with intelligent caching
 -  **Rate Limiting** - Respects API limits automatically
 
-## Installation
+## Quick Installation (30 Seconds!)
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd ASCII-Generator
-   ```
+```bash
+cd ~/Projects/ASCII-Generator
+./install.sh
+```
 
-2. **Create and activate a virtual environment:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+The automated installer:
+1. Installs the package in your virtual environment
+2. Sets up a global `ascii` command (works from any directory!)
+3. No manual virtual environment activation needed
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+After installation:
+```bash
+# Reload your shell
+source ~/.bashrc  # or source ~/.zshrc
 
-4. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your API key(s)
-   ```
+# First run triggers automatic API key setup wizard
+ascii check
 
-   Set at least one API key in `.env`:
-   ```
-   GEMINI_API_KEY=your_gemini_api_key_here
-   GROQ_API_KEY=your_groq_api_key_here  # Optional
-   ```
+# Generate your first ASCII art!
+ascii art "a cat" --live
+```
 
-   You can use either Gemini or Groq (or both). If both are set, Gemini will be used by default (auto-selection).
+**Get your free API keys:**
+- **Groq**: https://console.groq.com/keys (Recommended, faster)
+- **Gemini**: https://makersuite.google.com/app/apikey (Optional)
+
+API keys are stored locally in `.env` file (never uploaded, private to you).
+
+---
 
 ## Usage
 
-**Important:** Make sure to activate the virtual environment first, or use the venv Python directly:
+No need to activate virtual environments - just use `ascii` from anywhere:
 
 ```bash
-# Option 1: Activate the virtual environment
-source .venv/bin/activate
-python cli.py art "a cat wearing sunglasses"
-
-# Option 2: Use venv Python directly (without activation)
-.venv/bin/python cli.py art "a cat wearing sunglasses"
+# From ANY directory:
+ascii art "a cat wearing sunglasses"
+ascii chart "Q1=100, Q2=150, Q3=200" --live
+ascii diagram "user login flow" --provider groq
 ```
+
+---
+
+## Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--live` | Show live progressive drawing animation |
+| `--provider groq` | Use Groq API (default: auto) |
+| `--provider gemini` | Use Gemini API |
+| `--no-cache` | Disable caching for this request |
+| `--no-colors` | Disable color output (monochrome) |
+| `--explain` | Get explanation (charts/art only) |
+| `--orientation left-to-right` | Horizontal diagram flow |
+| `--orientation top-to-bottom` | Vertical diagram flow (default) |
+
+---
 
 ### ASCII Art
 
