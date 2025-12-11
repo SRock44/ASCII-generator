@@ -1,18 +1,20 @@
 """Chart generator for bar charts, line charts, etc."""
+from typing import Optional
 from ai.client import AIClient
 from ai.prompts import CHART_PROMPT
 from cache import Cache
 from rate_limiter import RateLimiter
 from renderer import Renderer
+from validators import ASCIIValidator
 
 
 class ChartGenerator:
     """Generator for terminal-based charts."""
     
-    def __init__(self, ai_client: AIClient, cache: Cache = None, rate_limiter: RateLimiter = None):
+    def __init__(self, ai_client: AIClient, cache: Optional[Cache] = None, rate_limiter: Optional[RateLimiter] = None):
         """
         Initialize chart generator.
-        
+
         Args:
             ai_client: AI client instance
             cache: Optional cache instance
@@ -21,6 +23,7 @@ class ChartGenerator:
         self.ai_client = ai_client
         self.cache = cache or Cache()
         self.rate_limiter = rate_limiter or RateLimiter()
+        self.validator = ASCIIValidator(mode="chart")
         self.renderer = Renderer()
     
     def generate(self, prompt: str, use_cache: bool = True) -> str:
@@ -45,12 +48,15 @@ class ChartGenerator:
 
         # Generate using AI
         result = self.ai_client.generate(prompt, CHART_PROMPT)
+        
+        # Validate and clean the result (preserves color hints for colorizer)
+        cleaned_result, validation = self.validator.validate_and_clean(result, strict=False)
 
-        # Cache result
+        # Cache cleaned result
         if use_cache:
-            self.cache.set(prompt, "chart", result)
+            self.cache.set(prompt, "chart", cleaned_result)
 
-        return result
+        return cleaned_result
 
     def generate_stream(self, prompt: str, use_cache: bool = True):
         """
@@ -76,20 +82,25 @@ class ChartGenerator:
 
         # Generate using AI with streaming
         accumulated = ""
-        if hasattr(self.ai_client, 'generate_stream'):
-            for chunk in self.ai_client.generate_stream(prompt, CHART_PROMPT):
+        generate_stream_method = getattr(self.ai_client, 'generate_stream', None)
+        if generate_stream_method:
+            for chunk in generate_stream_method(prompt, CHART_PROMPT):
                 accumulated += chunk
                 yield chunk
 
-            # Cache result
+            # Validate and clean the final result (preserves color hints)
+            cleaned_result, validation = self.validator.validate_and_clean(accumulated, strict=False)
+            
+            # Cache cleaned result
             if use_cache:
-                self.cache.set(prompt, "chart", accumulated)
+                self.cache.set(prompt, "chart", cleaned_result)
         else:
             # Fallback to non-streaming if not supported
             result = self.ai_client.generate(prompt, CHART_PROMPT)
             if use_cache:
                 self.cache.set(prompt, "chart", result)
             yield result
+
 
 
 

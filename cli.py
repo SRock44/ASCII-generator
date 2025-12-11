@@ -270,7 +270,7 @@ def chart(prompts, no_cache, provider, explain, live):
                         sys.exit(1)
                 else:
                     title = f"Chart {i}" if len(prompts) > 1 else "Chart"
-                    renderer.render_ascii(result, title=title)
+                    renderer.render_ascii(result, title=title, use_colors=True)
 
                     # Generate explanation if requested
                     if explain:

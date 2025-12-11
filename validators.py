@@ -6,18 +6,18 @@ import re
 class ValidationResult:
     """Result of validation check."""
 
-    def __init__(self, is_valid: bool, errors: List[str] = None, warnings: List[str] = None):
+    def __init__(self, is_valid: bool, errors: Optional[List[str]] = None, warnings: Optional[List[str]] = None):
         """
         Initialize validation result.
 
         Args:
             is_valid: Whether validation passed
-            errors: List of error messages
-            warnings: List of warning messages
+            errors: Optional list of error messages
+            warnings: Optional list of warning messages
         """
         self.is_valid = is_valid
-        self.errors = errors or []
-        self.warnings = warnings or []
+        self.errors = errors if errors is not None else []
+        self.warnings = warnings if warnings is not None else []
 
     def __bool__(self):
         """Return validation status."""
@@ -166,7 +166,68 @@ class ASCIIValidator:
         if explanation_lines and len(explanation_lines) > 2:
             warnings.append(f"May contain explanatory text instead of pure ASCII art")
 
-        # 8. Mode-specific validations
+        # 8. Quality check: Ensure output is recognizable and not just repetitive patterns
+        if self.mode == "art":
+            non_empty_lines = [line.strip() for line in lines if line.strip()]
+            if len(non_empty_lines) >= 3:
+                # Check for excessive repetition (indicates broken output)
+                normalized_lines = [''.join(line.split()) for line in non_empty_lines]
+                unique_patterns = len(set(normalized_lines))
+                total_lines = len(normalized_lines)
+                
+                # If we have many lines but very few unique patterns, it's likely broken
+                if total_lines > 10 and unique_patterns < 3:
+                    errors.append(
+                        f"Output appears broken: {total_lines} lines but only {unique_patterns} unique patterns. "
+                        "This suggests the AI got stuck in a repetitive loop."
+                    )
+                
+                # Check for character diversity (should have variety, not just one character)
+                all_chars = set(''.join(non_empty_lines))
+                # Remove spaces and common structural chars to check for content
+                content_chars = all_chars - {' ', '|', '-', '_', '/', '\\'}
+                if len(content_chars) < 2 and total_lines > 5:
+                    warnings.append(
+                        "Output has very low character diversity - may not be recognizable ASCII art"
+                    )
+                
+                # Check for structural variety (should have different line lengths/patterns)
+                line_lengths = [len(line) for line in non_empty_lines]
+                unique_lengths = len(set(line_lengths))
+                if unique_lengths < 2 and total_lines > 5:
+                    warnings.append(
+                        "All lines have similar length - output may lack structural variety"
+                    )
+                
+                # Check for symmetry (art should be symmetrical for creatures/animals)
+                # Simple check: see if lines are roughly centered and balanced
+                asymmetry_count = 0
+                for line in non_empty_lines:
+                    if len(line) > 3:  # Only check lines with content
+                        # Remove leading/trailing spaces to find actual content
+                        content = line.strip()
+                        if len(content) > 3:
+                            # Check if line appears roughly centered (not heavily skewed)
+                            # Count non-space chars on left vs right half
+                            mid = len(content) // 2
+                            left_half = content[:mid]
+                            right_half = content[mid:]
+                            left_chars = len([c for c in left_half if c != ' '])
+                            right_chars = len([c for c in right_half if c != ' '])
+                            
+                            # If one side has significantly more characters, it's asymmetric
+                            if left_chars > 0 and right_chars > 0:
+                                ratio = max(left_chars, right_chars) / min(left_chars, right_chars)
+                                if ratio > 2.0:  # One side has 2x more characters
+                                    asymmetry_count += 1
+                
+                # If many lines are asymmetric, warn about it
+                if asymmetry_count > len(non_empty_lines) * 0.3:  # More than 30% of lines
+                    warnings.append(
+                        "Output lacks symmetry - art should be balanced and centered for better appearance"
+                    )
+
+        # 9. Mode-specific validations
         if self.mode == "diagram":
             # Check for complete box structures
             has_box_chars = any(c in content for c in "┌┐└┘─│")
@@ -179,20 +240,44 @@ class ASCIIValidator:
                         "└": content.count("└"),
                         "┘": content.count("┘")
                     }
-                    # Boxes should have matching corners
+                    # Boxes should have matching corners - every top corner needs a bottom corner
                     if not (corner_counts["┌"] == corner_counts["└"] and
                             corner_counts["┐"] == corner_counts["┘"]):
-                        warnings.append(
-                            "Incomplete box structures detected (mismatched corners: "
-                            f"top-left: {corner_counts['┌']}, bottom-left: {corner_counts['└']}, "
-                            f"top-right: {corner_counts['┐']}, bottom-right: {corner_counts['┘']})"
+                        errors.append(
+                            f"Incomplete box structures: {corner_counts['┌']} top-left corners but {corner_counts['└']} bottom-left, "
+                            f"{corner_counts['┐']} top-right but {corner_counts['┘']} bottom-right. "
+                            "Every box must have all 4 corners complete."
                         )
+                    
+                    # Check for arrows inside boxes (should be between boxes)
+                    lines = content.split("\n")
+                    arrow_chars = "→←↑↓"
+                    for i, line in enumerate(lines):
+                        if any(c in line for c in arrow_chars):
+                            # Check if this line looks like it's inside a box (has │ on both sides)
+                            if "│" in line:
+                                # Count │ characters - if there are │ on both sides, arrow might be inside box
+                                parts = line.split("│")
+                                if len(parts) > 2:  # Has │ on both sides
+                                    # Check if arrow is between │ characters (inside box)
+                                    for part in parts[1:-1]:  # Middle parts (between │)
+                                        if any(c in part for c in arrow_chars):
+                                            warnings.append(
+                                                f"Arrow found inside box on line {i+1}. Arrows should be between boxes, not inside them."
+                                            )
 
         # Determine if valid
         is_valid = len(errors) == 0
         if strict and warnings:
             # In strict mode, warnings also fail validation
             is_valid = False
+        
+        # For art mode, also fail if quality warnings indicate broken output
+        if self.mode == "art" and not is_valid:
+            # If we have quality errors, mark as invalid
+            quality_errors = [e for e in errors if "broken" in e.lower() or "repetitive" in e.lower()]
+            if quality_errors:
+                is_valid = False
 
         return ValidationResult(is_valid, errors, warnings)
 
@@ -208,6 +293,9 @@ class ASCIIValidator:
         """
         if not content:
             return content
+
+        # NOTE: Do NOT strip color hints here - the colorizer needs them to parse colors
+        # Color hints will be stripped in the renderer after colorizer has parsed them
 
         # Remove markdown code blocks AGGRESSIVELY
         content = content.strip()
@@ -233,27 +321,53 @@ class ASCIIValidator:
             lines.pop()
 
         # Remove repetitive pattern lines (like | | repeated 50 times)
-        lines = self._remove_repetitive_patterns(lines)
+        # For art mode, be more conservative to preserve structure
+        if self.mode == "art":
+            lines = self._remove_repetitive_patterns_conservative(lines)
+        else:
+            lines = self._remove_repetitive_patterns(lines)
 
-        # Fix alignment to MINIMUM indentation (STRICT - normalize to leftmost position)
+        # Fix alignment - PRESERVE STRUCTURE for art mode
         non_empty_lines = [line for line in lines if line.strip()]
         if non_empty_lines:
             leading_spaces = [len(line) - len(line.lstrip()) for line in non_empty_lines]
-
-            # Use MINIMUM indentation as base (leftmost position)
-            # This preserves the leftmost content and normalizes everything to it
             min_indent = min(leading_spaces)
+            max_indent = max(leading_spaces)
+            indent_range = max_indent - min_indent
 
-            # STRICT: Fix ANY variation in leading spaces
-            if max(leading_spaces) - min(leading_spaces) > 0:
-                fixed_lines = []
-                for line in lines:
-                    if line.strip():
-                        # Normalize to minimum indent (leftmost)
-                        fixed_lines.append(" " * min_indent + line.lstrip())
-                    else:
-                        fixed_lines.append("")
-                lines = fixed_lines
+            if self.mode == "art":
+                # For art: PRESERVE original alignment - different indents are intentional!
+                # Only normalize if there's EXTREME misalignment (>15 spaces difference)
+                # This suggests actual formatting errors, not intentional structure
+                if indent_range > 15:
+                    # Only normalize extreme outliers (>10 spaces from minimum)
+                    # This preserves intentional relative positioning
+                    fixed_lines = []
+                    for line in lines:
+                        if line.strip():
+                            current_indent = len(line) - len(line.lstrip())
+                            # Only fix if way off (more than 10 spaces from minimum)
+                            if current_indent - min_indent > 10:
+                                # Normalize extreme outliers to minimum
+                                fixed_lines.append(" " * min_indent + line.lstrip())
+                            else:
+                                # Keep original positioning - it's intentional structure
+                                fixed_lines.append(line)
+                        else:
+                            fixed_lines.append("")
+                    lines = fixed_lines
+                # Otherwise, keep ALL original alignment - it's intentional structure
+            else:
+                # For charts/diagrams: Normalize alignment (they should be aligned)
+                if indent_range > 0:
+                    fixed_lines = []
+                    for line in lines:
+                        if line.strip():
+                            # Normalize to minimum indent
+                            fixed_lines.append(" " * min_indent + line.lstrip())
+                        else:
+                            fixed_lines.append("")
+                    lines = fixed_lines
 
         # Remove invalid characters (replace with space or remove)
         cleaned_lines = []
@@ -290,6 +404,8 @@ class ASCIIValidator:
         # Normalize box widths - ensure all lines in a box have the same width
         if self.mode in ["chart", "diagram"]:
             lines = self._normalize_box_widths(lines)
+            # Complete any incomplete boxes (add missing bottom borders)
+            lines = self._complete_incomplete_boxes(lines)
 
         # Truncate lines to max width (but don't cut box borders)
         truncated_lines = []
@@ -343,6 +459,79 @@ class ASCIIValidator:
 
         return normalized
 
+    def _complete_incomplete_boxes(self, lines: List[str]) -> List[str]:
+        """
+        Complete any boxes that are missing their bottom border.
+        Detects boxes that start with ┌ but don't have a corresponding └─┘ bottom border.
+        
+        Args:
+            lines: List of lines
+            
+        Returns:
+            List of lines with incomplete boxes completed
+        """
+        if not lines:
+            return lines
+        
+        completed = []
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i]
+            
+            # Check if this line starts a box (has ┌)
+            if "┌" in line:
+                # Find the box group
+                box_start = i
+                box_lines = []
+                found_bottom = False
+                
+                # Collect all lines that are part of this box
+                j = i
+                while j < len(lines):
+                    current_line = lines[j]
+                    box_lines.append(current_line)
+                    
+                    # Check if this line has a bottom border
+                    if "└" in current_line and "┘" in current_line:
+                        found_bottom = True
+                        j += 1
+                        break
+                    
+                    # Check if we've left the box (next line doesn't have │ or box chars)
+                    if j + 1 < len(lines):
+                        next_line = lines[j + 1]
+                        # If next line doesn't have │ and doesn't start a new box, we've left this box
+                        if "│" not in next_line and "┌" not in next_line and next_line.strip():
+                            # We've left the box without finding bottom border
+                            break
+                    
+                    j += 1
+                
+                # If box doesn't have a bottom border, add it
+                if not found_bottom and box_lines:
+                    # Find the width of the box (from top border)
+                    top_line = box_lines[0]
+                    # Find positions of ┌ and ┐
+                    left_pos = top_line.find("┌")
+                    right_pos = top_line.rfind("┐")
+                    
+                    if left_pos >= 0 and right_pos > left_pos:
+                        # Calculate width
+                        box_width = right_pos - left_pos
+                        # Create bottom border
+                        bottom_border = " " * left_pos + "└" + "─" * (box_width - 1) + "┘"
+                        box_lines.append(bottom_border)
+                
+                # Add all box lines to completed
+                completed.extend(box_lines)
+                i = j
+            else:
+                completed.append(line)
+                i += 1
+        
+        return completed
+
     def _remove_repetitive_patterns(self, lines: List[str]) -> List[str]:
         """
         Remove repetitive pattern lines that indicate the AI got stuck.
@@ -364,9 +553,10 @@ class ASCIIValidator:
         cleaned = []
         last_line_normalized = None
         repeat_count = 1
-        # RELAXED: Only stop on EXTREME repetition (15+ lines)
-        # Let the AI be creative! Don't limit legitimate patterns.
-        max_allowed_occurrences = 15
+        # STRICT: Quality-focused thresholds to prevent broken output
+        # Simple patterns (1-2 unique chars, ≤3 total): max 4 occurrences
+        # Complex patterns: max 5 occurrences
+        # This ensures variety and prevents stuck loops
 
         for line in lines:
             line_stripped = line.strip()
@@ -380,19 +570,22 @@ class ASCIIValidator:
             # Normalize line for pattern detection (remove spacing variations)
             line_normalized = ''.join(line_stripped.split())
 
-            # Only detect EXTREME stuck patterns (very simple + many repeats)
-            # This catches infinite loops without limiting creativity
-            is_extreme_simple = (
-                len(line_normalized) <= 2 and  # Extremely short (≤2 chars)
-                len(set(line_normalized)) == 1  # Single character repeated
+            # Determine threshold based on pattern complexity
+            unique_chars = len(set(line_normalized))
+            pattern_length = len(line_normalized)
+            
+            # Simple patterns: very short (≤3 chars) with 1-2 unique characters
+            is_simple_pattern = (
+                pattern_length <= 3 and 
+                unique_chars <= 2
             )
-
-            if is_extreme_simple:
-                # Only the most basic patterns get limited
-                threshold = 8  # Allow up to 8 even for simplest patterns
+            
+            if is_simple_pattern:
+                # Simple patterns like "| |", "||", "/ /" - max 4 occurrences
+                threshold = 4
             else:
-                # Everything else: very generous threshold
-                threshold = max_allowed_occurrences
+                # Complex patterns - max 5 occurrences
+                threshold = 5
 
             # Detect repetitive patterns
             if last_line_normalized and line_normalized == last_line_normalized:
@@ -400,7 +593,58 @@ class ASCIIValidator:
                 if repeat_count <= threshold:
                     cleaned.append(line)
                 else:
-                    # Only stop on truly extreme repetition
+                    # Stop when threshold exceeded - prevents broken output
+                    break
+            else:
+                repeat_count = 1
+                last_line_normalized = line_normalized
+                cleaned.append(line)
+
+        # Final cleanup: remove trailing empty lines
+        while cleaned and not cleaned[-1].strip():
+            cleaned.pop()
+
+        return cleaned
+
+    def _remove_repetitive_patterns_conservative(self, lines: List[str]) -> List[str]:
+        """
+        Remove repetitive patterns conservatively for art mode.
+        Only removes EXTREME repetition (10+ identical lines), preserving legitimate structure.
+        
+        Args:
+            lines: List of lines
+            
+        Returns:
+            List of lines with only extreme repetitive patterns removed
+        """
+        if not lines:
+            return lines
+
+        cleaned = []
+        last_line_normalized = None
+        repeat_count = 1
+        # Very conservative: only remove if 10+ identical lines
+        max_allowed_occurrences = 10
+
+        for line in lines:
+            line_stripped = line.strip()
+
+            # Skip empty lines
+            if not line_stripped:
+                if cleaned:
+                    cleaned.append(line)
+                continue
+
+            # Normalize line for pattern detection (remove spacing variations)
+            line_normalized = ''.join(line_stripped.split())
+
+            # Detect repetitive patterns
+            if last_line_normalized and line_normalized == last_line_normalized:
+                repeat_count += 1
+                if repeat_count <= max_allowed_occurrences:
+                    cleaned.append(line)
+                else:
+                    # Only stop on extreme repetition (10+ times)
                     break
             else:
                 repeat_count = 1
@@ -566,33 +810,44 @@ class StreamingValidator:
     def _detect_repetition(self) -> bool:
         """
         Detect if we're getting repetitive content in real-time.
-        RELAXED: Only stops on EXTREME repetition (12+ identical lines).
-        Allows creative patterns and legitimate structure.
+        STRICT: Stops on excessive repetition (6+ identical lines).
+        Ensures quality output and prevents broken/infinite loops.
 
         Returns:
-            True if extreme repetition detected, False otherwise
+            True if excessive repetition detected, False otherwise
         """
         # Split accumulated content into lines
         lines = self.accumulated.split("\n")
 
-        # Need at least 12 lines to detect EXTREME repetition
-        if len(lines) < 12:
+        # Need at least 6 lines to detect repetition
+        if len(lines) < 6:
             return False
 
         # Check the last several lines
-        recent_lines = [line.strip() for line in lines[-15:] if line.strip()]
+        recent_lines = [line.strip() for line in lines[-10:] if line.strip()]
 
-        if len(recent_lines) < 12:
+        if len(recent_lines) < 6:
             return False
 
         # Normalize lines (remove all spacing)
-        normalized = [''.join(line.split()) for line in recent_lines[-12:]]
+        normalized = [''.join(line.split()) for line in recent_lines[-6:]]
 
-        # Only stop on EXTREME cases: 12+ identical lines
-        # This catches infinite loops without limiting creativity
-        if len(set(normalized)) == 1 and normalized[0]:
-            # Same pattern repeated 12+ times - definitely stuck in loop
-            return True
+        # Check for simple patterns (very short, few unique chars)
+        if normalized:
+            first_pattern = normalized[0]
+            unique_chars = len(set(first_pattern))
+            pattern_length = len(first_pattern)
+            
+            is_simple = pattern_length <= 3 and unique_chars <= 2
+            
+            if is_simple:
+                # Simple patterns: stop after 4 identical lines
+                if len(set(normalized[:4])) == 1 and normalized[0]:
+                    return True
+            else:
+                # Complex patterns: stop after 6 identical lines
+                if len(set(normalized)) == 1 and normalized[0]:
+                    return True
 
         return False
 

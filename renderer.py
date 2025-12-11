@@ -117,10 +117,14 @@ class Renderer:
             self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
         
         # Apply intelligent colors if enabled
+        # Colorizer will parse color hints from content and apply colors, then return clean art
         if use_colors:
             colored_content = self.colorizer.colorize(content)
             self.console.print(colored_content)
         else:
+            # Strip color hints if present (even when colors are disabled)
+            if "###COLORS###" in content:
+                content = content.split("###COLORS###")[0].strip()
             # Use monospace font for ASCII art
             self.console.print(content, style="white")
         self.console.print()  # Extra newline
@@ -295,24 +299,42 @@ class Renderer:
                 accumulated_content += chunk
 
                 # Split by lines and render progressively
+                # Colorizer will handle stripping color hints when it parses them
                 current_lines = accumulated_content.split("\n")
 
                 # Build display text
                 display_text = Text()
 
+                # Find where color hints section starts (if present)
+                color_section_start_idx = None
+                for idx, line in enumerate(current_lines):
+                    if "###COLORS###" in line:
+                        color_section_start_idx = idx
+                        break
+                
                 for i, line in enumerate(current_lines):
+                    # Skip lines that are part of the color hints section
+                    if color_section_start_idx is not None and i >= color_section_start_idx:
+                        continue  # Don't display color hints section
+                    
+                    # Strip color hints marker if it appears in the line itself
+                    if "###COLORS###" in line:
+                        line = line.split("###COLORS###")[0].strip()
+                        if not line:
+                            continue  # Skip empty lines after stripping
+                    
                     # For incomplete last line (might get more content), show it dimmed
-                    if i == len(current_lines) - 1 and not accumulated_content.endswith("\n"):
-                        # Last incomplete line - show dimmed
+                    if i == len(current_lines) - 1 and not accumulated_content.endswith("\n") and color_section_start_idx is None:
+                        # Last incomplete line - show dimmed (only if not in color section)
                         if use_colors:
-                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=True)
+                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=True, accumulated_content=accumulated_content)
                             display_text.append(colored_line)
                         else:
                             display_text.append(line, style="dim white")
                     else:
                         # Complete line
                         if use_colors:
-                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False)
+                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False, accumulated_content=accumulated_content)
                             display_text.append(colored_line)
                         else:
                             display_text.append(line, style="white")
