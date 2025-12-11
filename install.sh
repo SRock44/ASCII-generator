@@ -52,7 +52,8 @@ echo "Configuration file: $RC_FILE"
 echo ""
 
 # Step 4: Check if alias/function already exists
-FUNCTION_LINE="ascii() { (source $PROJECT_DIR/.venv/bin/activate && command ascii \"\$@\") }"
+# Use venv's installed script directly - no activation needed, no prompt change
+FUNCTION_LINE="ascii() { $PROJECT_DIR/.venv/bin/ascii \"\$@\"; }"
 
 if grep -q "ascii()" "$RC_FILE" 2>/dev/null || grep -q "alias ascii=" "$RC_FILE" 2>/dev/null; then
     echo "Found existing 'ascii' command in $RC_FILE"
@@ -74,10 +75,10 @@ if grep -q "ascii()" "$RC_FILE" 2>/dev/null || grep -q "alias ascii=" "$RC_FILE"
     fi
 fi
 
-# Step 5: Add function (runs in subshell so venv doesn't affect parent shell)
+# Step 5: Add function (uses venv Python directly - no activation needed)
 echo "Adding function to $RC_FILE..."
 echo "" >> "$RC_FILE"
-echo "# ASCII-Generator - Global command (runs in subshell to avoid venv prompt)" >> "$RC_FILE"
+echo "# ASCII-Generator - Global command (uses venv Python directly, no activation)" >> "$RC_FILE"
 echo "$FUNCTION_LINE" >> "$RC_FILE"
 echo "Function added"
 echo ""

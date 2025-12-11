@@ -49,8 +49,13 @@ if [ -n "$RC_FILE" ] && [ -f "$RC_FILE" ]; then
             sed -i '/# ASCII-Generator - Global command/d' "$RC_FILE"
             
             # Remove single-line function definition (most common case)
-            # The function is: ascii() { (source .../.venv/bin/activate && command ascii "$@") }
-            # Match any line that starts with ascii() and contains .venv/bin/activate
+            # The function can be either:
+            #   ascii() { .../.venv/bin/ascii "$@"; }  (new format - no activation)
+            #   ascii() { .../.venv/bin/python -m cli "$@"; }  (alternative)
+            #   ascii() { (source .../.venv/bin/activate && command ascii "$@") }  (old format)
+            # Match any line that starts with ascii() and contains .venv
+            sed -i '/^ascii() {.*\.venv.*bin.*ascii.*}$/d' "$RC_FILE"
+            sed -i '/^ascii() {.*\.venv.*bin.*python.*-m cli.*}$/d' "$RC_FILE"
             sed -i '/^ascii() {.*\.venv.*bin.*activate.*}$/d' "$RC_FILE"
             # Also match if it contains "command ascii"
             sed -i '/^ascii() {.*command ascii.*}$/d' "$RC_FILE"
@@ -60,11 +65,17 @@ if [ -n "$RC_FILE" ] && [ -f "$RC_FILE" ]; then
             # Match from function start to closing brace on new line
             sed -i '/^ascii() {/,/^}$/d' "$RC_FILE"
             
-            # Use a more robust approach: remove any function that contains .venv/bin/activate
+            # Use a more robust approach: remove any function that contains .venv
             # This handles both single-line and multi-line cases
             if command -v perl >/dev/null 2>&1; then
                 # Remove function spanning multiple lines (perl can handle this better)
-                perl -i -0pe 's/^ascii\(\) \{[^}]*\.venv[^}]*\}//gm' "$RC_FILE"
+                # Match functions with .venv/bin/ascii (new format)
+                perl -i -0pe 's/^ascii\(\) \{[^}]*\.venv[^}]*bin[^}]*ascii[^}]*\}//gm' "$RC_FILE"
+                # Match functions with .venv/bin/python -m cli
+                perl -i -0pe 's/^ascii\(\) \{[^}]*\.venv[^}]*python[^}]*-m cli[^}]*\}//gm' "$RC_FILE"
+                # Match functions with .venv/bin/activate
+                perl -i -0pe 's/^ascii\(\) \{[^}]*\.venv[^}]*activate[^}]*\}//gm' "$RC_FILE"
+                # Match functions with command ascii
                 perl -i -0pe 's/^ascii\(\) \{.*command ascii[^}]*\}//gm' "$RC_FILE"
             fi
             
