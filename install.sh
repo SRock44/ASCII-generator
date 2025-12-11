@@ -51,20 +51,21 @@ echo "Detected shell: $SHELL_NAME"
 echo "Configuration file: $RC_FILE"
 echo ""
 
-# Step 4: Check if alias already exists
-ALIAS_LINE="alias ascii='source $PROJECT_DIR/.venv/bin/activate && ascii'"
+# Step 4: Check if alias/function already exists
+FUNCTION_LINE="ascii() { (source $PROJECT_DIR/.venv/bin/activate && command ascii \"\$@\") }"
 
-if grep -q "alias ascii=" "$RC_FILE" 2>/dev/null; then
-    echo "Found existing 'ascii' alias in $RC_FILE"
+if grep -q "ascii()" "$RC_FILE" 2>/dev/null || grep -q "alias ascii=" "$RC_FILE" 2>/dev/null; then
+    echo "Found existing 'ascii' command in $RC_FILE"
     echo ""
     read -p "Do you want to UPDATE it? (y/n): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Remove old alias
+        # Remove old alias or function
         sed -i.bak '/alias ascii=/d' "$RC_FILE"
-        echo "Removed old alias"
+        sed -i.bak '/^ascii() {/,/^}$/d' "$RC_FILE"
+        echo "Removed old command"
     else
-        echo "Skipping alias setup."
+        echo "Skipping command setup."
         echo ""
         echo "======================================================================"
         echo "  Installation Complete!"
@@ -73,12 +74,12 @@ if grep -q "alias ascii=" "$RC_FILE" 2>/dev/null; then
     fi
 fi
 
-# Step 5: Add alias
-echo "Adding alias to $RC_FILE..."
+# Step 5: Add function (runs in subshell so venv doesn't affect parent shell)
+echo "Adding function to $RC_FILE..."
 echo "" >> "$RC_FILE"
-echo "# ASCII-Generator - Global command" >> "$RC_FILE"
-echo "$ALIAS_LINE" >> "$RC_FILE"
-echo "Alias added"
+echo "# ASCII-Generator - Global command (runs in subshell to avoid venv prompt)" >> "$RC_FILE"
+echo "$FUNCTION_LINE" >> "$RC_FILE"
+echo "Function added"
 echo ""
 
 # Step 6: Success message
