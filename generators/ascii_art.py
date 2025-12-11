@@ -106,18 +106,18 @@ class ASCIIArtGenerator:
                 feedback_lines.append(f"- {warning}")
             feedback_lines.append("")
         
-        # Add specific guidance
+        # Add specific guidance emphasizing ascii-art.de minimalist principles
         feedback_lines.extend([
-            "PLEASE REGENERATE with these corrections:",
-            "1. Ensure VARIETY: Use different characters, patterns, and line structures",
-            "2. Avoid repetition: Never repeat the same line pattern more than 4-5 times",
-            "3. Add character diversity: Use a mix of letters, symbols, and structural elements",
-            "4. Create RECOGNIZABLE shapes: The output must INSTANTLY be recognizable as the requested subject",
-            "5. Include ICONIC ELEMENTS: Add distinctive features that make the subject clearly identifiable",
-            "6. Vary line lengths: Don't make all lines the same length",
+            "PLEASE REGENERATE with these corrections (using ascii-art.de minimalist principles):",
+            "1. Use STRATEGIC NEGATIVE SPACE: Leave empty areas to define form - quality ASCII art is 40-60% filled, NOT densely packed",
+            "2. Focus on ICONIC FEATURES: Start with eyes, ears, nose - minimal, recognizable elements, not filling space",
+            "3. SIMPLIFY: Choose fewer, more meaningful characters rather than complex variety - less is more",
+            "4. Avoid repetition: Never repeat the same line pattern more than 4-5 times",
+            "5. Create RECOGNIZABLE shapes: The output must INSTANTLY be recognizable as the requested subject",
+            "6. BREATHING ROOM: Leave space around features to prevent visual clutter",
             "7. ENSURE SYMMETRY: For creatures, animals, and symmetrical objects, make sure both sides mirror each other perfectly",
             "8. Center your art: Count characters on left and right sides to ensure perfect balance",
-            "9. AVOID ABSTRACT SHAPES: Create concrete, recognizable representations, not abstract patterns",
+            "9. Keep it MINIMAL: 4-12 lines is ideal - don't over-detail, stop when recognizable",
             "",
             f"Original request: {original_prompt}",
             "",
@@ -147,7 +147,7 @@ class ASCIIArtGenerator:
             True if quality issues detected, False otherwise
         """
         # Check for critical quality errors
-        quality_keywords = ["broken", "repetitive", "diversity", "recognizable", "variety"]
+        quality_keywords = ["broken", "repetitive", "recognizable", "dense", "negative space"]
         for error in validation.errors:
             if any(keyword in error.lower() for keyword in quality_keywords):
                 return True

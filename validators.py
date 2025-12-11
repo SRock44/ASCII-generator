@@ -216,13 +216,23 @@ class ASCIIValidator:
                         "This suggests the AI got stuck in a repetitive loop."
                     )
                 
-                # Check for character diversity (should have variety, not just one character)
-                all_chars = set(''.join(non_empty_lines))
-                # Remove spaces and common structural chars to check for content
-                content_chars = all_chars - {' ', '|', '-', '_', '/', '\\'}
-                if len(content_chars) < 2 and total_lines > 5:
+                # Check for excessive density (ascii-art.de principle: 40-60% filled space)
+                all_chars = ''.join(non_empty_lines)
+                spaces = all_chars.count(' ')
+                total_chars = len(all_chars)
+                filled_ratio = (total_chars - spaces) / total_chars if total_chars > 0 else 0
+
+                # Warn if too dense (> 65% filled)
+                if filled_ratio > 0.65:
+                    errors.append(
+                        f"Output is too dense ({int(filled_ratio * 100)}% filled) - use more negative space for clarity and recognition. "
+                        "Quality ASCII art is typically 40-60% filled space."
+                    )
+                # Suggest minimalism if approaching too dense (> 60% filled)
+                elif filled_ratio > 0.60:
                     warnings.append(
-                        "Output has very low character diversity - may not be recognizable ASCII art"
+                        f"Output is fairly dense ({int(filled_ratio * 100)}% filled). Consider using more strategic empty space - "
+                        "quality ASCII art is typically 40-60% filled."
                     )
                 
                 # Check for structural variety (should have different line lengths/patterns)

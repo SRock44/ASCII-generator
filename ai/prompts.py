@@ -47,201 +47,151 @@ CRITICAL RULES (STRICTLY ENFORCED):
 24. If the subject has iconic elements (like Superman's S shield, Batman's mask, etc.), they MUST be clearly visible
 25. AVOID REPETITIVE LOOPS: If you notice you're repeating the same line, immediately vary the pattern or move to the next section
 
-PROFESSIONAL ASCII ART TECHNIQUES (learned from thousands of examples):
+PROFESSIONAL TECHNIQUES (from ascii-art.de archives):
 
-24. SHADING TECHNIQUE: Create depth using character density gradients
-    - Light to dark progression: ' ' → '.' → ':' → '-' → 'o' → 'O' → '*' → '#' → '@'
-    - Use this progression to show curves, shadows, and 3D form
-    - Mix characters within the same area for smooth gradients
+1. START WITH ICONIC FEATURES
+   - Eyes are the most recognizable element - place them first
+   - Position ears/nose/mouth relative to eyes
+   - Use minimal characters: eyes (o O @ ^), nose (^ v .), mouth (- = U)
+   - Keep features symmetrical for symmetrical subjects
 
-25. CURVE TECHNIQUE: Use combinations of characters to create smooth curves
-    - Gentle curves: '(', ')', '{', '}', '[', ']'
-    - Sharp angles: '/', '\', '<', '>'
-    - Smooth transitions: Combine '/\' for flowing lines
-    - Subtle curves: Use ',', '`', ';', ':' for fine curve adjustments
-    - Advanced curves: Combine multiple punctuation marks for sophisticated shapes
-    - Examples: 
-      * "()" for round shapes
-      * "/\" for angular lines
-      * "{}" for soft curves
-      * ",'`" for subtle, organic curves
-      * ";:" for flowing transitions
+2. MASTER NEGATIVE SPACE
+   - Quality ASCII art is 40-60% empty space, NOT densely filled
+   - Use whitespace to define form - let viewer's eye complete the shape
+   - Avoid filling areas just because they're empty
+   - Strategic emptiness creates clarity and recognition
 
-26. TEXTURE TECHNIQUE: Use character patterns to suggest different textures
-    - Fur/Fluffy: Mix of '/', '\', '|', '^', 'v', '~' in varied, organic patterns
-      * Vary the pattern - don't repeat the same sequence
-      * Use different characters in different areas for natural look
-      * Mix directions: '/', '\' for different fur directions
-    - Scales: Repeated patterns of 'o', 'O', '.', '*', '='
-      * Create regular but varied patterns
-      * Use size variation ('.' vs 'O') for depth
-    - Smooth surfaces: Consistent use of '-', '_', '='
-      * Use for flat, smooth areas like bellies or backgrounds
-    - Rough surfaces: Mix of '#', '@', '%', '$', '&'
-      * Use for textured, detailed areas
-      * Mix characters for natural variation
-    - Avoid repetitive patterns - vary the character placement to look natural
-    - Study real examples: Notice how professional artists vary character placement
+3. CHOOSE YOUR VIEW
+   - Profile view: Best for showing action, movement, full body
+   - Front-facing: Best for symmetrical subjects, portraits, faces
+   - Pick the view that maximizes recognition with minimal strokes
 
-27. FEATURE-SPECIFIC CHARACTER SELECTION (based on professional examples):
-    - Eyes: 'o', 'O', '@', '=', '0', 'Q' - choose based on style (round, wide, alert, sleepy)
-      * Round eyes: 'o', 'O' for normal/alert expressions
-      * Wide eyes: '@', '=' for surprised or excited
-      * Position eyes symmetrically on either side of the face
-    - Nose: '^', 'v', 'V', '.', '-', '>' - position between and slightly below eyes
-      * Triangle nose: '^' pointing up, 'v' pointing down
-      * Dot nose: '.' for small, subtle noses
-      * Line nose: '-', '=' for different styles
-    - Ears: '/\', '^', or combinations like '/', '\', '(', ')' for different ear shapes
-      * Pointed ears: '/\' for alert cats
-      * Rounded ears: '(', ')' or combinations
-      * Position ears symmetrically above eyes
-    - Mouth: '-', '=', '~', 'U', 'v', 'V' - match the expression
-      * Happy: 'U', 'v' for smile
-      * Neutral: '-', '=' for straight line
-      * Open: 'O', 'o' for meowing
-    - Whiskers: Use '-', '_', '=' extending horizontally from face (3-4 on each side)
-      * Position whiskers on either side of nose/mouth area
-      * Keep whiskers symmetrical
-    - Paws: Use '(', ')', 'o', 'O', or combinations for paw pads
-      * Front paws: Show toes with '(', ')', 'o'
-      * Back paws: Similar but positioned differently
-    - Body: Use '/', '\', '|', '-', '_', '.', ':' for body structure
-      * Outline: '/', '\' for curved body edges
-      * Texture: Mix characters for fur/texture (avoid repeating the same pattern)
-      * Belly: Use lighter characters ('.', ':', '-') or leave space
-      * For long animals (snakes, alligators, crocodiles): 
-        - Vary the body pattern - don't repeat the same line structure more than 2-3 times
-        - Use different characters and spacing to show body segments, scales, or texture variation
-        - Show the tail tapering with varied characters
-        - Include legs/limbs positioned appropriately along the body
-        - Make the body look like a cohesive whole, not just repeated vertical lines
+4. MINIMAL TEXTURE APPROACH
+   - Use 2-3 characters maximum per texture type
+   - Fur: Mix / \ | sparingly (not dense patterns)
+   - Scales: Use o . * in simple patterns (not elaborate grids)
+   - Smooth: Use - _ = for clean surfaces
+   - AVOID repetitive dense patterns - they reduce recognizability
 
-28. PERSPECTIVE TECHNIQUE: Use size variation and character density to show depth
-    - Closer elements: larger, more detailed characters, darker shading
-    - Distant elements: smaller, lighter characters, less detail
-    - Overlap elements naturally (e.g., front paws over body)
+5. NATURAL DIRECTIONAL FLOW
+   - Follow subject anatomy with line direction
+   - Curved backs: gentle slopes with / \
+   - Wings: angled lines following natural shape
+   - Tails: flowing curves, not rigid lines
+   - Let lines guide the eye through composition
 
-29. LAYERING TECHNIQUE: Build up the art systematically in layers
-    - Layer 1: Structural outline using '/', '\', '|', '-', '_'
-    - Layer 2: Main features (eyes, nose, mouth, ears) using appropriate characters
-    - Layer 3: Body structure and limbs
-    - Layer 4: Shading and texture using '#', '@', '*', '%', etc.
-    - Layer 5: Finishing touches (whiskers, details, highlights)
-    - Advanced layering: Overlap characters (e.g., ';' over '\' over '_') for sophisticated depth
-    - Creative layering: Use punctuation marks (',', '`', ';', ':') as intermediate layers for smooth transitions
+6. LAYERING WITH PURPOSE
+   - Layer 1: Outline (minimal structural frame)
+   - Layer 2: Key features (eyes, nose, ears - most important!)
+   - Layer 3: Body suggestion (minimal filling)
+   - Layer 4: Optional details (whiskers, texture hints)
+   - STOP when recognizable - don't over-detail
 
-30. SYMMETRY TECHNIQUE: For symmetrical subjects, ensure perfect mirroring
-    - Count characters on each side - they must match exactly
-    - Use the same characters in mirrored positions
-    - Center alignment is critical - use spaces to center properly
-    - Check both horizontal and vertical symmetry where applicable
-
-31. COMPOSITION TECHNIQUE: Create balanced, visually appealing art
-    - Use negative space strategically - don't fill every character
-    - Create visual hierarchy - important features should stand out
-    - Balance detail with simplicity - too much detail can be cluttered
-    - Consider the overall shape and flow of the art
+7. BREATHING ROOM
+   - Leave space around features to prevent visual clutter
+   - Don't connect every element - gaps create definition
+   - Use spacing as a design tool, not filler
 
 ALIGNMENT VERIFICATION: Check that EVERY line starts at the same column position.
 
-QUALITY STANDARDS - Make it look PROFESSIONAL and RECOGNIZABLE:
-- Clear, well-defined shapes and features that are INSTANTLY RECOGNIZABLE as the requested subject
-- Include ICONIC ELEMENTS: For characters, include distinctive features (Superman=S shield, Batman=mask/ears, etc.)
-- Proper proportions (heads aren't too big/small, bodies match, etc.)
-- SYMMETRY: For creatures, animals, and objects that should be symmetrical, ensure perfect left-right balance
-- Center alignment: Symmetrical art should be perfectly centered with equal spacing on both sides
-- All features visible and identifiable (eyes, nose, mouth, limbs, distinctive markings, etc.)
-- Use shading characters (#, @, *, etc.) for depth and detail
-- Complete ALL elements - don't leave anything half-finished
-- Think about the overall composition - make it aesthetically pleasing
-- Count characters on each side to ensure symmetry - left and right sides should mirror each other
-- AVOID ABSTRACT SHAPES: The art must clearly represent the subject, not just abstract patterns
+QUALITY STANDARDS - ASCII-ART.DE PRINCIPLES:
+- INSTANT RECOGNITION: Subject should be identifiable from iconic features alone
+- STRATEGIC MINIMALISM: Use 40-60% filled space, rest is negative space
+- ICONIC FEATURES: Eyes, ears, nose must be clear and positioned correctly
+- CLEAN LINES: Avoid dense patterns, complex gradients, over-filling
+- NATURAL FLOW: Lines follow subject anatomy naturally
+- BREATHING ROOM: Space around features prevents visual clutter
+- SYMMETRY: Perfectly centered and balanced for symmetrical subjects
+- SIMPLICITY: Stop when recognizable - don't over-detail
 
-EXAMPLES OF EXCELLENT QUALITY ASCII ART (from professional collections):
+GOOD EXAMPLES FROM ASCII-ART.DE STYLE (notice minimal lines, strategic spacing):
 
-These examples demonstrate key principles: symmetry, character variety, layering, and recognizability.
-
-Example 1 - Simple and elegant (perfect symmetry):
+Example 1 - Minimal cat (front-facing, perfect for symmetrical subjects):
    /\_/\
   ( o.o )
    > ^ <
   /|   |\
-  | |   | |
-   |   |
-  |     |
 
-Example 2 - Detailed with texture and layering:
-            .                .
-            :"-.          .-";
-            |:`.`.__..__.'.';|
-            || :-"      "-; ||
-            :;              :;
-            /  .==.    .==.  \
-           :      _.--._      ;
-           ; .--.' `--' `.--. :
-          :   __;`      ':__   ;
-          ;  '  '-._:;_.-'  '  :
-          '.       `--'       .'
-           ."-._          _.-".
-         .'     ""------""     `.
+Example 2 - Profile cat (shows personality with minimal strokes):
+ |\___/|
+ )     (
+=\     /=
+  )===(
+ /     \
+ |     |
+/       \
 
-Example 3 - Stylized with character variety:
-       .^----^.
-      (= o  O =)
-       (___V__)
-      _|==|_
-     / ,._| |--| |
-    | \__ |__}-|__}
-     \___)`
+Example 3 - Simple owl (iconic features make it instantly recognizable):
+  ,___,
+  [O.O]
+  /)__)
+ --"--"--
 
-Example 4 - Complex artistic style with sophisticated layering:
-                       ;\
-                      _' \_
-                    ,' '  '`.
-                   ;,)       \
-                  /          :
-                  (_         :
-                   `--.       \
-                      /        `.
-                     ;           `.
-                    /              `.
-                   :                 `.
-                   :                   \
-                    \\                  \
-                     ::                 :
-                     || |               |
-                     || |`._            ;
-       Y            _;; ; __`._,       (________
-   (t^##_          ((__/(_____(______,'______(___) SSt
+Example 4 - Dragon head (strategic negative space, minimal detail):
+    /\
+   /  \
+  /,..;\
+ {`'}`'`)
+  \ () /
+   `--'
 
-Example 5 - Expressive style with dynamic composition:
-                               ,----.
-                              ( WOW! )                         .-.
-                               `----' _                         \ \
-                                     (_)                         \ \
-                                         O                       | |
-                    |\ /\                  o                     | |
-    __              |,\(_\_                  . /\---/\   _,---._ | |
-   ( (              |\,`   `-^.               /^   ^  \,'       `. ;
-    \ \             :    `-'   )             ( O   O   )           ;
-     \ \             \        ;               `.=o=__,'            \
-      \ \             `-.   ,'                  /         _,--.__   \
-       \ \ ____________,'  (                   /  _ )   ,'   `-. `-. \
-        ; '                ;                  / ,' /  ,'        \ \ \ \
-        \                 /___,-.            / /  / ,'          (,_)(,_)
-         `,    ,_____|  ;'_____,'           (,;  (,,)      jrei
-       ,-" \  :      | :
-      ( .-" \ `.__   | |
-       \__)  `.__,'  |__)  SSt
+Example 5 - Bunny (shows how emptiness defines form):
+  (\/)
+  (^.^)
+ (")_(")
 
-KEY PRINCIPLES FROM THESE EXAMPLES:
-- Symmetry: Perfect left-right mirroring for symmetrical subjects
-- Character variety: Mix different characters to avoid repetitive patterns
-- Layering: Build up from outline to details to shading for depth
-- Recognizability: Include distinctive features that make the subject instantly identifiable
-- Avoid repetition: Never repeat the same line pattern more than 3-4 times
-- Complete structure: Finish all elements - don't leave anything half-finished
+KEY OBSERVATIONS:
+- Examples are 4-8 lines (not 13-20)
+- 40-60% empty space (not 80% filled)
+- Instantly recognizable from iconic features
+- Minimal texture, maximum clarity
+- No dense shading gradients or complex patterns
+
+ANTI-PATTERNS - DO NOT CREATE ART LIKE THIS:
+
+Bad Example 1 - TOO DENSE (fills space unnecessarily):
+   /#######\
+  /##@@@@@##\
+ |##@o###o@##|
+ |###@@@@@###|
+ |###########|
+  \#########/
+   |#######|
+   |#######|
+   |###|###|
+  /#\#|#/#\#
+ |###\|/###|
+ |####|####|
+Problem: 85% filled, uses repetitive patterns, hard to recognize, cluttered
+
+Bad Example 2 - EXCESSIVE REPETITION (same pattern repeated):
+    ||||
+    ||||
+    ||||
+    ||||
+    ||||
+    ||||
+    ||||
+Problem: No variation, unrecognizable, boring, lacks iconic features
+
+Bad Example 3 - OVER-DETAILED (too many techniques at once):
+   .:*#@%$&*:.
+  :@\^^~--~^^/@:
+ {%/o::::.::::o\%}
+ #|:,`'";;"'`,:|#
+ $\*~-======-~*/$
+  &@#%$***$%#@&
+Problem: Character chaos, no clear features, visual noise
+
+LEARN FROM MISTAKES: These anti-patterns show why minimalism wins - simple, strategic placement beats dense complexity.
+
+KEY PRINCIPLES:
+- Minimalism: 4-8 lines with 40-60% empty space
+- Strategic features: Start with eyes, ears, nose - the essentials
+- Negative space: Empty areas define the form
+- Instant recognition: Iconic features make subject clear
+- No density: Avoid filling space just because it's empty
+- Clean lines: Simple, natural flow without clutter
 
 OUTPUT FORMAT:
 1. First, output the ASCII art (pure ASCII, no formatting)
