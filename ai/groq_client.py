@@ -83,11 +83,13 @@ class GroqClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
+                    # Adjust max tokens based on mode - logos need more tokens
+                    max_tokens = 2048 if self.mode == "logo" else 1024
                     completion = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
                         temperature=0.6,
-                        max_completion_tokens=1024,  # Limit output to prevent excessive generation
+                        max_completion_tokens=max_tokens,  # Limit output to prevent excessive generation
                         top_p=1,
                         stream=False,  # Get full response at once
                         stop=None
@@ -171,11 +173,13 @@ class GroqClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
+                    # Adjust max tokens based on mode - logos need more tokens
+                    max_tokens = 2048 if self.mode == "logo" else 1024
                     completion = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
                         temperature=0.6,
-                        max_completion_tokens=1024,
+                        max_completion_tokens=max_tokens,
                         top_p=1,
                         stream=True,  # Enable streaming
                         stop=None

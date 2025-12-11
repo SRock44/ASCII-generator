@@ -296,7 +296,18 @@ class Renderer:
         try:
             with Live(console=self.console, refresh_per_second=60, transient=False) as live:
                 try:
+                    retry_detected = False
                     for chunk in content_generator:
+                        # Check for retry marker - this means previous output was broken
+                        if "[RETRY]" in chunk:
+                            retry_detected = True
+                            # Clear accumulated content (broken output) and start fresh
+                            accumulated_content = ""
+                            # Remove the retry marker from chunk
+                            chunk = chunk.replace("[RETRY]", "")
+                            # Clear the display
+                            live.update(Text())
+                        
                         # Check for errors
                         if chunk and chunk.startswith("ERROR_CODE:"):
                             # Error occurred, render it and exit

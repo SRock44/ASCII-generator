@@ -25,7 +25,7 @@ def create_ai_client(provider: Optional[str] = None, mode: str = "art") -> AICli
             from .gemini import GeminiClient
             if not config.GEMINI_API_KEY:
                 raise ValueError("GEMINI_API_KEY is required but not set")
-            return GeminiClient()
+            return GeminiClient(mode=mode)
 
         elif provider == "groq":
             from .groq_client import GroqClient
@@ -53,7 +53,7 @@ def create_ai_client(provider: Optional[str] = None, mode: str = "art") -> AICli
 
     if provider_name == "gemini":
         from .gemini import GeminiClient
-        return GeminiClient()
+        return GeminiClient(mode=mode)
     elif provider_name == "groq":
         from .groq_client import GroqClient
         return GroqClient(mode=mode)

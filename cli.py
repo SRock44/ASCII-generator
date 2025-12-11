@@ -128,10 +128,13 @@ Explain what the chart/diagram shows, the data relationships, and key insights. 
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--explain', is_flag=True, help='Get an explanation of the generated art from Groq')
 @click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
-def art(prompts, no_cache, no_colors, provider, explain, no_live):
+@click.option('--logo', is_flag=True, help='Enable logo/branding mode for larger, more detailed ASCII art (up to 150 chars width, 100 lines)')
+def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
     """Generate ASCII art from one or more text prompts.
     
     Live progressive rendering is enabled by default. Use --no-live to disable.
+    Logo mode is automatically detected for prompts containing words like "logo", "branding", 
+    "company", "text", etc. Use --logo to force logo mode, or --no-logo to disable auto-detection.
     
     Examples:
       ascii-gen art "a cat wearing sunglasses"
@@ -139,6 +142,10 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live):
       ascii-gen art "a cat" --provider groq --no-cache --no-colors
       ascii-gen art "a cat" --explain
       ascii-gen art "a cat" --no-live  # Use traditional rendering
+      ascii-gen art "logo for a company called Newton"  # Auto-detects logo mode
+      ascii-gen art "MY COMPANY"  # Auto-detects logo mode (capitalized text)
+      ascii-gen art "ASCII ART" --provider groq  # Auto-detects logo mode
+      ascii-gen art "MY COMPANY" --logo  # Force logo mode
     """
     try:
         # Check if Groq is available for explanations (use temp renderer for errors)
@@ -148,6 +155,7 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live):
 
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
+        # Start with art mode - will be auto-detected or overridden by --logo flag
         ai_client = create_ai_client(provider_name, mode="art")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
@@ -163,16 +171,33 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live):
                 if no_live:
                     renderer.render_loading("Generating ASCII art...")
 
+            # Auto-detect logo mode (unless explicitly set via --logo flag)
+            # logo is True if --logo flag is set, False if not set
+            # Pass None to auto-detect, True to force logo, False to force art
+            is_logo_mode = True if logo else None  # None = auto-detect, True = force logo
+            
+            # Determine title based on detected/forced mode
+            if logo:
+                # Explicitly set to logo mode
+                detected_logo = True
+            else:
+                # Auto-detect
+                detected_logo = generator._detect_logo_request(prompt)
+            
+            if detected_logo:
+                title = f"Logo {i}" if len(prompts) > 1 else "Logo"
+            else:
+                title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
+            
             if not no_live:
                 # Use live progressive rendering
-                title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
-                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
+                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache, is_logo=is_logo_mode)
                 renderer.render_ascii_progressive(stream_generator, title=title, use_colors=not no_colors)
 
                 # For explanation, we need the full result
                 if explain:
                     # Re-generate or get from cache (will be cached from streaming)
-                    result = generator.generate(prompt, use_cache=True)
+                    result = generator.generate(prompt, use_cache=True, is_logo=is_logo_mode)
                     if not result.startswith("ERROR_CODE:"):
                         renderer.render_loading("Generating explanation...")
                         explanation = generate_explanation(result, 'art', prompt)
@@ -180,7 +205,7 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live):
                         renderer.render_explanation(explanation, title="Explanation")
             else:
                 # Traditional non-streaming rendering
-                result = generator.generate(prompt, use_cache=not no_cache)
+                result = generator.generate(prompt, use_cache=not no_cache, is_logo=is_logo_mode)
 
                 renderer.clear_line()
                 # Check if result is an error
@@ -191,7 +216,7 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live):
                     else:
                         sys.exit(1)
                 else:
-                    title = f"ASCII Art {i}" if len(prompts) > 1 else "ASCII Art"
+                    # Title already determined above
                     renderer.render_ascii(result, title=title, use_colors=not no_colors)
 
                     # Generate explanation if requested

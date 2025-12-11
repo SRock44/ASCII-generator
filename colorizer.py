@@ -137,13 +137,13 @@ class ASCIIColorizer:
         return ascii_art
 
     def _get_color_for_char(self, char: str, line_idx: int, total_lines: int, 
-                           char_type: str = None) -> str:
+                           char_type: Optional[str] = None) -> Optional[str]:
         """
         Get color for a character, prioritizing AI-provided colors.
         
         Priority order:
         1. Character-specific color from AI (char_colors)
-        2. Feature-based color from AI (color_hints)
+        2. Feature-based color from AI (color_hints) - if char_type provided
         3. Region-based color from AI (region_colors)
         4. Default color from AI
         5. Mode-specific hardcoded defaults
@@ -155,13 +155,13 @@ class ASCIIColorizer:
             char_type: Optional character type hint (e.g., 'outline', 'eyes', 'body')
             
         Returns:
-            Color name as string
+            Color name as string, or None if no AI color found
         """
         # 1. Check character-specific color from AI
         if char in self.char_colors:
             return self.char_colors[char]
         
-        # 2. Check feature-based color from AI
+        # 2. Check feature-based color from AI (if char_type provided)
         if char_type and char_type in self.color_hints:
             return self.color_hints[char_type]
         
@@ -230,20 +230,23 @@ class ASCIIColorizer:
         body_color = self.color_hints.get('body')
         hat_color = self.color_hints.get('hat')
         ears_color = self.color_hints.get('ears')
+        
+        # Get default color from AI if provided
+        default_ai_color = self.default_color
 
         # Fallback defaults (only if AI didn't provide)
         if not outline_color:
-            outline_color = 'bright_cyan'
+            outline_color = default_ai_color or 'bright_cyan'
         if not eyes_color:
-            eyes_color = 'bright_yellow'
+            eyes_color = default_ai_color or 'bright_yellow'
         if not nose_color:
-            nose_color = 'bright_green'
+            nose_color = default_ai_color or 'bright_green'
         if not mouth_color:
-            mouth_color = 'bright_green'
+            mouth_color = default_ai_color or 'bright_green'
         if not body_color:
-            body_color = 'white'
+            body_color = default_ai_color or 'white'
         if not hat_color:
-            hat_color = 'brown'
+            hat_color = default_ai_color or 'brown'
         if not ears_color:
             ears_color = outline_color
 
@@ -258,7 +261,7 @@ class ASCIIColorizer:
             is_top = non_empty_idx < total_lines * 0.25 if total_lines > 0 else False
 
             for char in line:
-                # Try to get color from AI first
+                # Try to get color from AI first (checks char_colors, feature-based, region-based, default)
                 ai_color = self._get_color_for_char(char, non_empty_idx, total_lines)
                 
                 if ai_color:
@@ -266,6 +269,7 @@ class ASCIIColorizer:
                     text.append(char, style=ai_color)
                 else:
                     # Fall back to character-type based coloring
+                    # Use AI-provided feature colors if available, otherwise use defaults
                     # Structural outlines
                     if char in '/\\|_-=+':
                         color = hat_color if is_top and 'hat' in self.color_hints else outline_color
@@ -281,13 +285,24 @@ class ASCIIColorizer:
                         text.append(char, style=body_color)
                     # Dots and stars
                     elif char in '.*':
-                        text.append(char, style="bright_magenta")
+                        # Check if AI provided a color for dots/stars
+                        dot_color = self.color_hints.get('dots') or self.color_hints.get('stars') or default_ai_color or "bright_magenta"
+                        text.append(char, style=dot_color)
                     # Parentheses and brackets
                     elif char in '(){}[]':
-                        text.append(char, style="cyan")
-                    # Everything else
+                        # Check if AI provided a color for brackets
+                        bracket_color = self.color_hints.get('brackets') or default_ai_color or "cyan"
+                        text.append(char, style=bracket_color)
+                    # Everything else - use body color or default
                     else:
-                        text.append(char, style=body_color)
+                        # Prioritize: body_color (if set by AI) > default_ai_color > 'white'
+                        if body_color and body_color != 'white':
+                            final_color = body_color
+                        elif default_ai_color:
+                            final_color = default_ai_color
+                        else:
+                            final_color = 'white'
+                        text.append(char, style=final_color)
 
             if line_idx < len(lines) - 1:
                 text.append("\n")

@@ -1,5 +1,6 @@
 """Validators for ASCII art strictness enforcement."""
 from typing import Tuple, List, Optional
+from collections import Counter
 import re
 
 
@@ -34,6 +35,15 @@ class ASCIIValidator:
         "0123456789"
         " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
     )
+    
+    LOGO_CHARS = set(
+        # Basic ASCII printables
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+        # Block characters for bold text and borders
+        "█░▒▓"
+    )
 
     CHART_CHARS = set(
         # Box-drawing characters
@@ -62,7 +72,7 @@ class ASCIIValidator:
         Initialize validator.
 
         Args:
-            mode: Validation mode - "art", "chart", or "diagram"
+            mode: Validation mode - "art", "chart", "diagram", or "logo"
         """
         self.mode = mode.lower()
 
@@ -75,6 +85,11 @@ class ASCIIValidator:
             self.allowed_chars = self.DIAGRAM_CHARS
             self.max_lines = 50
             self.max_width = 80
+        elif self.mode == "logo":
+            # Logo mode allows larger sizes for branding and text art
+            self.allowed_chars = self.LOGO_CHARS
+            self.max_lines = 100
+            self.max_width = 150
         else:  # Default to art mode
             self.allowed_chars = self.ASCII_ART_CHARS
             self.max_lines = 50
@@ -175,10 +190,29 @@ class ASCIIValidator:
                 unique_patterns = len(set(normalized_lines))
                 total_lines = len(normalized_lines)
                 
+                # Check for patterns that appear many times (even if not consecutive)
+                pattern_counts = Counter(normalized_lines)
+                max_pattern_count = max(pattern_counts.values()) if pattern_counts else 0
+                
+                # If any single pattern appears 6+ times, that's excessive repetition (was 5, now 6 to be less aggressive)
+                if max_pattern_count >= 6:
+                    most_common = pattern_counts.most_common(1)[0]
+                    errors.append(
+                        f"Output has excessive repetition: pattern '{most_common[0][:20]}...' appears {most_common[1]} times. "
+                        "This suggests the AI got stuck in a repetitive loop. Please vary the pattern and complete the art."
+                    )
+                
                 # If we have many lines but very few unique patterns, it's likely broken
-                if total_lines > 10 and unique_patterns < 3:
+                # More strict: catch repetition earlier (8+ lines with <4 unique patterns)
+                elif total_lines >= 8 and unique_patterns < 4:
                     errors.append(
                         f"Output appears broken: {total_lines} lines but only {unique_patterns} unique patterns. "
+                        "This suggests the AI got stuck in a repetitive loop."
+                    )
+                # Also catch moderate repetition (15+ lines with <6 unique patterns)
+                elif total_lines >= 15 and unique_patterns < 6:
+                    errors.append(
+                        f"Output has excessive repetition: {total_lines} lines but only {unique_patterns} unique patterns. "
                         "This suggests the AI got stuck in a repetitive loop."
                     )
                 
@@ -321,9 +355,10 @@ class ASCIIValidator:
             lines.pop()
 
         # Remove repetitive pattern lines (like | | repeated 50 times)
-        # For art mode, be more conservative to preserve structure
+        # For art mode, be VERY conservative - only remove extreme repetition (15+ times)
         # For charts, be lenient - pie charts and bar charts can have legitimate repetition
         if self.mode == "art":
+            # Only remove EXTREME repetition (15+ identical lines) - let validation catch moderate issues
             lines = self._remove_repetitive_patterns_conservative(lines)
         elif self.mode == "chart":
             # Charts can have repetitive patterns (pie chart slices, bar chart rows)
@@ -598,8 +633,10 @@ class ASCIIValidator:
                 if repeat_count <= threshold:
                     cleaned.append(line)
                 else:
-                    # Stop when threshold exceeded - prevents broken output
-                    break
+                    # Skip excessive repetition but continue processing - don't break entirely
+                    # This allows the rest of the content to be preserved
+                    # The validator will catch this and trigger a retry
+                    continue
             else:
                 repeat_count = 1
                 last_line_normalized = line_normalized
@@ -614,7 +651,7 @@ class ASCIIValidator:
     def _remove_repetitive_patterns_conservative(self, lines: List[str]) -> List[str]:
         """
         Remove repetitive patterns conservatively for art mode.
-        Only removes EXTREME repetition (10+ identical lines), preserving legitimate structure.
+        Only removes EXTREME repetition (15+ identical lines), preserving legitimate structure.
         
         Args:
             lines: List of lines
@@ -628,8 +665,8 @@ class ASCIIValidator:
         cleaned = []
         last_line_normalized = None
         repeat_count = 1
-        # Very conservative: only remove if 10+ identical lines
-        max_allowed_occurrences = 10
+        # Very conservative: only remove if 15+ identical lines (was 10)
+        max_allowed_occurrences = 15
 
         for line in lines:
             line_stripped = line.strip()

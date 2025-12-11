@@ -40,7 +40,7 @@ def timeout_context(seconds):
 class GeminiClient(AIClient):
     """Google Gemini AI client."""
     
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, timeout: Optional[int] = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, timeout: Optional[int] = None, mode: str = "art"):
         """
         Initialize Gemini client.
         
@@ -48,10 +48,12 @@ class GeminiClient(AIClient):
             api_key: Gemini API key (defaults to config)
             model: Model name (defaults to config)
             timeout: Request timeout in seconds (defaults to config.DEFAULT_TIMEOUT)
+            mode: Validation mode - "art", "chart", "diagram", or "logo" (defaults to "art")
         """
         self.api_key = api_key or config.GEMINI_API_KEY
         self.model_name = model or config.GEMINI_MODEL
         self.timeout = timeout or config.DEFAULT_TIMEOUT
+        self.mode = mode
         
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is required")
@@ -82,11 +84,13 @@ class GeminiClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
+                    # Adjust max tokens based on mode - logos need more tokens
+                    max_tokens = 8192 if self.mode == "logo" else 4096
                     response = self.model.generate_content(
                         full_prompt,
                         generation_config={
                             "temperature": 0.7,
-                            "max_output_tokens": 4096,  # Increased for longer diagrams
+                            "max_output_tokens": max_tokens,  # Increased for logos and longer diagrams
                         }
                     )
             except TimeoutError as e:

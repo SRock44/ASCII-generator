@@ -1,7 +1,8 @@
 """ASCII art generator."""
 from typing import Optional
+import re
 from ai.client import AIClient
-from ai.prompts import ASCII_ART_PROMPT
+from ai.prompts import ASCII_ART_PROMPT, LOGO_PROMPT
 from cache import Cache
 from rate_limiter import RateLimiter
 from renderer import Renderer
@@ -10,6 +11,15 @@ from validators import ASCIIValidator, ValidationResult
 
 class ASCIIArtGenerator:
     """Generator for ASCII art."""
+
+    # Keywords that suggest logo/branding generation
+    LOGO_KEYWORDS = [
+        r'\blogo\b', r'\bbranding\b', r'\bbrand\b', r'\bcompany\b', r'\bcorporate\b',
+        r'\btext\b', r'\bletter\b', r'\bletters\b', r'\bword\b', r'\bwords\b',
+        r'\bname\b', r'\btitle\b', r'\bheader\b', r'\bbanner\b', r'\bsign\b',
+        r'\btypography\b', r'\bfont\b', r'\btypeface\b', r'\bmonogram\b',
+        r'\bemblem\b', r'\binsignia\b', r'\bcrest\b', r'\bmark\b'
+    ]
 
     def __init__(self, ai_client: AIClient, cache: Optional[Cache] = None, rate_limiter: Optional[RateLimiter] = None, max_retries: int = 2):
         """
@@ -27,6 +37,43 @@ class ASCIIArtGenerator:
         self.validator = ASCIIValidator(mode="art")
         self.max_retries = max_retries
         # Don't create renderer here - create it with prompt context when needed
+
+    def _detect_logo_request(self, prompt: str) -> bool:
+        """
+        Detect if the prompt is requesting a logo/branding generation.
+        
+        Args:
+            prompt: User prompt text
+            
+        Returns:
+            True if prompt suggests logo generation, False otherwise
+        """
+        prompt_lower = prompt.lower()
+        
+        # Check for logo-related keywords
+        for keyword_pattern in self.LOGO_KEYWORDS:
+            if re.search(keyword_pattern, prompt_lower, re.IGNORECASE):
+                return True
+        
+        # Check if prompt is just text/words (likely a logo request)
+        # If prompt is short (1-5 words) and contains mostly letters, it's likely a logo
+        words = prompt.split()
+        if len(words) <= 5:
+            # Check if most words are short (likely text for a logo)
+            short_words = sum(1 for w in words if len(w) <= 10)
+            if short_words >= len(words) * 0.7:  # 70% of words are short
+                # Check if it contains common logo phrases
+                logo_phrases = ['for', 'called', 'named', 'logo for', 'text', 'letters']
+                if any(phrase in prompt_lower for phrase in logo_phrases):
+                    return True
+                # If it's just a few words without "a" or "an" (not describing an object), likely logo
+                if not any(word.lower() in ['a', 'an', 'the'] for word in words):
+                    # Check if it looks like a company/product name (capitalized words)
+                    capitalized = sum(1 for w in words if w and w[0].isupper())
+                    if capitalized >= len(words) * 0.5:  # 50%+ capitalized
+                        return True
+        
+        return False
 
     def _build_feedback_prompt(self, original_prompt: str, validation: ValidationResult, previous_output: str) -> str:
         """
@@ -114,22 +161,36 @@ class ASCIIArtGenerator:
         
         return False
     
-    def generate(self, prompt: str, use_cache: bool = True) -> str:
+    def generate(self, prompt: str, use_cache: bool = True, is_logo: Optional[bool] = None) -> str:
         """
         Generate ASCII art from prompt with quality validation and retry on failure.
 
         Args:
             prompt: User prompt describing the art
             use_cache: Whether to use cache
+            is_logo: Whether this is a logo/branding generation (uses larger size limits).
+                    If None, automatically detects from prompt.
 
         Returns:
             Generated ASCII art (validated and cleaned)
         """
-        # Check cache first
+        # Auto-detect logo mode if not explicitly set
+        if is_logo is None:
+            is_logo = self._detect_logo_request(prompt)
+        
+        # Check cache first (include logo mode in cache key)
+        cache_key = "logo" if is_logo else "ascii_art"
         if use_cache:
-            cached = self.cache.get(prompt, "ascii_art")
+            cached = self.cache.get(prompt, cache_key)
             if cached:
                 return cached
+
+        # Use appropriate prompt based on mode
+        system_prompt = LOGO_PROMPT if is_logo else ASCII_ART_PROMPT
+        
+        # Update validator mode if needed
+        if is_logo and self.validator.mode != "logo":
+            self.validator = ASCIIValidator(mode="logo")
 
         # Try generation with retries
         current_prompt = prompt
@@ -144,17 +205,17 @@ class ASCIIArtGenerator:
             # Generate using AI
             if attempt == 0:
                 # First attempt: use original prompt
-                result = self.ai_client.generate(current_prompt, ASCII_ART_PROMPT)
+                result = self.ai_client.generate(current_prompt, system_prompt)
             else:
                 # Retry: use feedback prompt
                 if last_validation and last_result:
                     feedback_prompt = self._build_feedback_prompt(prompt, last_validation, last_result)
                     # Combine feedback with original system prompt
-                    enhanced_system_prompt = f"{ASCII_ART_PROMPT}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
+                    enhanced_system_prompt = f"{system_prompt}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
                     result = self.ai_client.generate(prompt, enhanced_system_prompt)
                 else:
                     # Fallback if we don't have previous validation/result
-                    result = self.ai_client.generate(current_prompt, ASCII_ART_PROMPT)
+                    result = self.ai_client.generate(current_prompt, system_prompt)
             
             # Validate and clean the result
             cleaned_result, validation = self.validator.validate_and_clean(result, strict=False)
@@ -163,7 +224,7 @@ class ASCIIArtGenerator:
             if validation.is_valid and not self._has_quality_issues(validation):
                 # Success! Cache and return
                 if use_cache:
-                    self.cache.set(prompt, "ascii_art", cleaned_result)
+                    self.cache.set(prompt, cache_key, cleaned_result)
                 return cleaned_result
             
             # Store for potential retry
@@ -178,30 +239,43 @@ class ASCIIArtGenerator:
         # The validator has already cleaned it as much as possible
         final_result = last_result if last_result else cleaned_result
         if use_cache:
-            self.cache.set(prompt, "ascii_art", final_result)
+            self.cache.set(prompt, cache_key, final_result)
         
         return final_result
 
-    def generate_stream(self, prompt: str, use_cache: bool = True):
+    def generate_stream(self, prompt: str, use_cache: bool = True, is_logo: Optional[bool] = None):
         """
         Generate ASCII art from prompt with streaming (yields chunks as they arrive).
-        Note: Streaming doesn't support retry with feedback (would break the stream).
-        Quality validation happens after streaming completes.
+        If validation fails after streaming, automatically retries using non-streaming method.
 
         Args:
             prompt: User prompt describing the art
             use_cache: Whether to use cache
+            is_logo: Whether this is a logo/branding generation (uses larger size limits).
+                    If None, automatically detects from prompt.
 
         Yields:
             Text chunks as they are generated
         """
-        # Check cache first
+        # Auto-detect logo mode if not explicitly set
+        if is_logo is None:
+            is_logo = self._detect_logo_request(prompt)
+        
+        # Check cache first (include logo mode in cache key)
+        cache_key = "logo" if is_logo else "ascii_art"
         if use_cache:
-            cached = self.cache.get(prompt, "ascii_art")
+            cached = self.cache.get(prompt, cache_key)
             if cached:
                 # Yield cached content in one chunk
                 yield cached
                 return
+
+        # Use appropriate prompt based on mode
+        system_prompt = LOGO_PROMPT if is_logo else ASCII_ART_PROMPT
+        
+        # Update validator mode if needed
+        if is_logo and self.validator.mode != "logo":
+            self.validator = ASCIIValidator(mode="logo")
 
         # Wait for rate limit
         self.rate_limiter.wait_if_needed()
@@ -211,22 +285,72 @@ class ASCIIArtGenerator:
         # Check if client supports streaming (using getattr to avoid type errors)
         generate_stream_method = getattr(self.ai_client, 'generate_stream', None)
         if generate_stream_method:
-            for chunk in generate_stream_method(prompt, ASCII_ART_PROMPT):
+            for chunk in generate_stream_method(prompt, system_prompt):
                 accumulated += chunk
                 yield chunk
 
             # Validate and clean the final result
             cleaned_result, validation = self.validator.validate_and_clean(accumulated, strict=False)
             
-            # Note: We can't retry during streaming, but we've cleaned the result
-            # If quality is really poor, the user will see it, but at least it's cleaned
-            
-            # Cache cleaned result
-            if use_cache:
-                self.cache.set(prompt, "ascii_art", cleaned_result)
+            # Check if validation failed or quality issues detected
+            if not validation.is_valid or self._has_quality_issues(validation):
+                # Validation failed - the streamed result is broken/incomplete
+                # Retry with streaming so it gets drawn live
+                
+                # Yield a marker to signal retry, then stream the retry result live
+                # The renderer will detect "[RETRY]" and clear previous output
+                yield "\n[RETRY]"
+                
+                # Retry with feedback - use streaming for live rendering
+                last_result = cleaned_result
+                last_validation = validation
+                
+                for attempt in range(self.max_retries + 1):
+                    # Build feedback prompt
+                    if last_validation and last_result:
+                        feedback_prompt = self._build_feedback_prompt(prompt, last_validation, last_result)
+                        enhanced_system_prompt = f"{system_prompt}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
+                        retry_prompt = prompt
+                    else:
+                        enhanced_system_prompt = system_prompt
+                        retry_prompt = prompt
+                    
+                    # Wait for rate limit
+                    self.rate_limiter.wait_if_needed()
+                    
+                    # Stream the retry attempt
+                    retry_accumulated = ""
+                    for chunk in generate_stream_method(retry_prompt, enhanced_system_prompt):
+                        retry_accumulated += chunk
+                        yield chunk
+                    
+                    # Validate the retry result
+                    retry_cleaned, retry_validation = self.validator.validate_and_clean(retry_accumulated, strict=False)
+                    
+                    # Check if retry succeeded
+                    if retry_validation.is_valid and not self._has_quality_issues(retry_validation):
+                        # Success! Cache and we're done
+                        if use_cache:
+                            self.cache.set(prompt, cache_key, retry_cleaned)
+                        return
+                    
+                    # Store for next retry attempt
+                    last_result = retry_cleaned
+                    last_validation = retry_validation
+                    
+                    # If this was the last attempt, we're done
+                    if attempt >= self.max_retries:
+                        # Cache the best we got
+                        if use_cache:
+                            self.cache.set(prompt, cache_key, retry_cleaned)
+                        return
+            else:
+                # Validation passed - cache the cleaned result
+                if use_cache:
+                    self.cache.set(prompt, cache_key, cleaned_result)
         else:
             # Fallback to non-streaming if not supported
             # Use the generate() method which has retry logic
-            result = self.generate(prompt, use_cache=use_cache)
+            result = self.generate(prompt, use_cache=use_cache, is_logo=is_logo)
             yield result
 
