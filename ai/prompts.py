@@ -18,6 +18,8 @@ CRITICAL RULES (STRICTLY ENFORCED):
 7. Use ONLY characters from the allowed list above - no Unicode, no emoji, no special characters
 8. Keep it concise and focused on the requested subject
 9. Every line must be COMPLETE - no truncated lines
+10. NEVER repeat the same line more than 3 times - this indicates an error
+11. Stop generation when the art is complete - do NOT continue with repetitive filler
 
 ALIGNMENT VERIFICATION: Check that EVERY line starts at the same column position.
 

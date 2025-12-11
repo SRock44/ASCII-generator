@@ -2,6 +2,7 @@
 """Main CLI entry point for ASCII Generator."""
 import click
 import sys
+import os
 from pathlib import Path
 
 from ai.factory import create_ai_client
@@ -17,11 +18,54 @@ from rate_limiter import RateLimiter
 import config
 
 
+def check_first_time_setup():
+    """Check if this is first time use and run setup wizard if needed."""
+    project_dir = Path(__file__).parent.absolute()
+    env_file = project_dir / ".env"
+
+    # If .env doesn't exist, this is first time use
+    if not env_file.exists():
+        click.echo()
+        click.echo("=" * 70)
+        click.echo("  Welcome to ASCII-Generator! 🎨")
+        click.echo("=" * 70)
+        click.echo()
+        click.echo("It looks like this is your first time running ASCII-Generator.")
+        click.echo("Let's get you set up with API keys (takes 1 minute).")
+        click.echo()
+
+        # Ask if they want to run setup
+        if click.confirm("Would you like to set up your API keys now?", default=True):
+            # Import and run setup wizard
+            setup_keys_path = project_dir / "setup_keys.py"
+            if setup_keys_path.exists():
+                import subprocess
+                result = subprocess.run([sys.executable, str(setup_keys_path)])
+                if result.returncode != 0:
+                    click.echo()
+                    click.echo("❌ Setup failed. You can run it manually later:")
+                    click.echo(f"   python {setup_keys_path}")
+                    sys.exit(1)
+            else:
+                click.echo()
+                click.echo("⚠️  Setup wizard not found. Please create a .env file manually.")
+                click.echo(f"   See: {project_dir}/INSTALL.md")
+                sys.exit(1)
+        else:
+            click.echo()
+            click.echo("No problem! You can set up API keys later by running:")
+            click.echo(f"   python {project_dir}/setup_keys.py")
+            click.echo()
+            click.echo("Or create a .env file manually with your API keys.")
+            sys.exit(0)
+
+
 @click.group()
 @click.version_option(version="1.0.0")
 def cli():
     """ASCII Generator - Generate ASCII art, charts, and diagrams using AI."""
-    pass
+    # Check for first-time setup on every command
+    check_first_time_setup()
 
 
 def generate_explanation(content: str, content_type: str, original_prompt: str) -> str:

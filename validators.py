@@ -232,6 +232,9 @@ class ASCIIValidator:
         while lines and not lines[-1].strip():
             lines.pop()
 
+        # Remove repetitive pattern lines (like | | repeated 50 times)
+        lines = self._remove_repetitive_patterns(lines)
+
         # Fix alignment to MINIMUM indentation (STRICT - normalize to leftmost position)
         non_empty_lines = [line for line in lines if line.strip()]
         if non_empty_lines:
@@ -307,7 +310,7 @@ class ASCIIValidator:
     def _normalize_box_widths(self, lines: List[str]) -> List[str]:
         """
         Normalize box widths - ensure all lines within a box have equal width.
-        Detects boxes and pads shorter lines to match the widest line.
+        Simple approach: find consecutive box lines and make them all the same width.
 
         Args:
             lines: List of lines
@@ -319,56 +322,135 @@ class ASCIIValidator:
             return lines
 
         normalized = []
-        in_box = False
-        box_start = -1
-        box_lines = []
+        box_group = []
 
         for i, line in enumerate(lines):
-            # Detect box start
-            if "┌" in line or (in_box and "│" in line):
-                if not in_box:
-                    in_box = True
-                    box_start = i
-                    box_lines = [line]
-                else:
-                    box_lines.append(line)
+            # Check if this line is part of a box (contains box-drawing characters)
+            is_box_line = any(c in line for c in ["┌", "┐", "└", "┘", "│", "┬", "┴", "├", "┤"])
 
-                # Detect box end
-                if "└" in line or "┘" in line:
-                    # Normalize this box
-                    max_width = max(len(l) for l in box_lines)
-
-                    # Pad all box lines to max width
-                    for j, box_line in enumerate(box_lines):
-                        if len(box_line) < max_width:
-                            # Check if line ends with │ or similar
-                            if box_line.rstrip().endswith("│"):
-                                # Pad before the closing │
-                                content = box_line.rstrip()[:-1]
-                                padding_needed = max_width - len(box_line)
-                                normalized.append(content + " " * padding_needed + "│")
-                            else:
-                                # Just pad at the end
-                                normalized.append(box_line + " " * (max_width - len(box_line)))
-                        else:
-                            normalized.append(box_line)
-
-                    in_box = False
-                    box_lines = []
+            if is_box_line:
+                box_group.append(line)
             else:
-                # Not in a box
-                if in_box:
-                    # Box was incomplete, just add what we have
-                    normalized.extend(box_lines)
-                    in_box = False
-                    box_lines = []
+                # End of box group - normalize it
+                if box_group:
+                    normalized.extend(self._pad_box_group(box_group))
+                    box_group = []
                 normalized.append(line)
 
-        # Handle any remaining incomplete box
-        if box_lines:
-            normalized.extend(box_lines)
+        # Handle remaining box group
+        if box_group:
+            normalized.extend(self._pad_box_group(box_group))
 
         return normalized
+
+    def _remove_repetitive_patterns(self, lines: List[str]) -> List[str]:
+        """
+        Remove repetitive pattern lines that indicate the AI got stuck.
+        Detects when the same line repeats more than 3 times in a row.
+
+        Args:
+            lines: List of lines
+
+        Returns:
+            List of lines with repetitive patterns removed
+        """
+        if not lines:
+            return lines
+
+        cleaned = []
+        last_line = None
+        repeat_count = 0
+
+        for line in lines:
+            line_stripped = line.strip()
+
+            # Skip empty lines at the end
+            if not line_stripped:
+                if cleaned:  # Only keep if we have content
+                    cleaned.append(line)
+                continue
+
+            # Detect repetitive patterns (same line repeated many times)
+            if last_line and line_stripped == last_line:
+                repeat_count += 1
+                # Allow up to 3 repetitions, then stop
+                if repeat_count <= 3:
+                    cleaned.append(line)
+                else:
+                    # Stop adding - we've hit a repetitive pattern
+                    break
+            else:
+                repeat_count = 0
+                last_line = line_stripped
+                cleaned.append(line)
+
+        return cleaned
+
+    def _pad_box_group(self, box_lines: List[str]) -> List[str]:
+        """
+        Pad all lines in a box group to the same width.
+        Finds the maximum line width and pads all lines to match.
+
+        Args:
+            box_lines: List of consecutive box lines
+
+        Returns:
+            Padded box lines
+        """
+        if not box_lines:
+            return box_lines
+
+        # Find maximum width
+        max_width = max(len(line) for line in box_lines)
+
+        padded = []
+        for line in box_lines:
+            if len(line) < max_width:
+                stripped = line.rstrip()
+
+                # Check what type of line this is
+                if stripped.endswith("│"):
+                    # Content line - pad before the │
+                    last_bar_pos = stripped.rfind("│")
+                    before_bar = line[:last_bar_pos]
+                    padding_needed = max_width - len(line)
+                    padded_line = before_bar + " " * padding_needed + "│"
+                    padded.append(padded_line)
+
+                elif "┌" in stripped and ("┐" in stripped or stripped.endswith("─")):
+                    # Top border - pad with ─ instead of spaces
+                    if stripped.endswith("┐"):
+                        # Has closing corner, pad with ─ before it
+                        before_corner = stripped[:-1]
+                        padding_needed = max_width - len(stripped)
+                        padded_line = before_corner + "─" * padding_needed + "┐"
+                        padded.append(padded_line)
+                    else:
+                        # No closing corner yet, add ─ then ┐
+                        padding_needed = max_width - len(stripped) - 1
+                        padded_line = stripped + "─" * padding_needed + "┐"
+                        padded.append(padded_line)
+
+                elif "└" in stripped and ("┘" in stripped or stripped.endswith("─")):
+                    # Bottom border - pad with ─ instead of spaces
+                    if stripped.endswith("┘"):
+                        # Has closing corner, pad with ─ before it
+                        before_corner = stripped[:-1]
+                        padding_needed = max_width - len(stripped)
+                        padded_line = before_corner + "─" * padding_needed + "┘"
+                        padded.append(padded_line)
+                    else:
+                        # No closing corner yet, add ─ then ┘
+                        padding_needed = max_width - len(stripped) - 1
+                        padded_line = stripped + "─" * padding_needed + "┘"
+                        padded.append(padded_line)
+                else:
+                    # Other box lines - just pad at the end with spaces
+                    padded.append(line + " " * (max_width - len(line)))
+            else:
+                padded.append(line)
+
+        return padded
 
     def validate_and_clean(self, content: str, strict: bool = False) -> Tuple[str, ValidationResult]:
         """
@@ -410,6 +492,7 @@ class StreamingValidator:
     """
     High-performance validator for real-time streaming content.
     Validates and cleans chunks as they arrive with minimal latency.
+    Detects and stops repetitive patterns in real-time.
     """
 
     def __init__(self, mode: str = "art"):
@@ -423,22 +506,63 @@ class StreamingValidator:
         self.validator = ASCIIValidator(mode=mode)
         self.accumulated = ""
         self.buffer = ""
+        self.last_lines = []  # Track last few lines for repetition detection
+        self.repeat_count = 0
+        self.stopped = False  # Flag to stop streaming if repetition detected
 
     def process_chunk(self, chunk: str) -> str:
         """
         Process a streaming chunk with real-time validation.
-        Extremely fast - only filters characters, no complex operations.
+        Extremely fast - filters characters and detects repetition.
 
         Args:
             chunk: Incoming text chunk
 
         Returns:
-            Validated chunk ready for display
+            Validated chunk ready for display, or empty string if stopped
         """
+        # If we've already stopped due to repetition, don't process more
+        if self.stopped:
+            return ""
+
         # Fast character filtering - this is blazing fast
         cleaned_chunk = self.validator.clean_chunk_fast(chunk)
         self.accumulated += cleaned_chunk
+
+        # Check for repetitive patterns in real-time
+        if self._detect_repetition():
+            self.stopped = True
+            return ""  # Stop yielding content
+
         return cleaned_chunk
+
+    def _detect_repetition(self) -> bool:
+        """
+        Detect if we're getting repetitive content in real-time.
+        Checks the last few complete lines.
+
+        Returns:
+            True if repetition detected, False otherwise
+        """
+        # Split accumulated content into lines
+        lines = self.accumulated.split("\n")
+
+        # Need at least 4 lines to detect repetition
+        if len(lines) < 4:
+            return False
+
+        # Check the last few lines
+        recent_lines = [line.strip() for line in lines[-5:] if line.strip()]
+
+        if len(recent_lines) < 3:
+            return False
+
+        # Check if the last 3 lines are identical
+        if len(set(recent_lines[-3:])) == 1:
+            # Same line repeated 3 times - likely stuck
+            return True
+
+        return False
 
     def finalize(self) -> str:
         """
