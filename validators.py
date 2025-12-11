@@ -346,43 +346,70 @@ class ASCIIValidator:
     def _remove_repetitive_patterns(self, lines: List[str]) -> List[str]:
         """
         Remove repetitive pattern lines that indicate the AI got stuck.
-        Detects when the same line repeats more than 3 times in a row.
+        Only removes when we detect EXCESSIVE repetition (5+ times), not legitimate structure.
+
+        Distinguishes between:
+        - Legitimate structure: Same line 2-4 times (body parts, etc.)
+        - Stuck pattern: Same line 5+ times (AI error)
 
         Args:
             lines: List of lines
 
         Returns:
-            List of lines with repetitive patterns removed
+            List of lines with excessive repetitive patterns removed
         """
         if not lines:
             return lines
 
         cleaned = []
-        last_line = None
-        repeat_count = 0
+        last_line_normalized = None
+        repeat_count = 1
+        # RELAXED: Only stop on EXTREME repetition (15+ lines)
+        # Let the AI be creative! Don't limit legitimate patterns.
+        max_allowed_occurrences = 15
 
         for line in lines:
             line_stripped = line.strip()
 
-            # Skip empty lines at the end
+            # Skip empty lines
             if not line_stripped:
-                if cleaned:  # Only keep if we have content
+                if cleaned:
                     cleaned.append(line)
                 continue
 
-            # Detect repetitive patterns (same line repeated many times)
-            if last_line and line_stripped == last_line:
+            # Normalize line for pattern detection (remove spacing variations)
+            line_normalized = ''.join(line_stripped.split())
+
+            # Only detect EXTREME stuck patterns (very simple + many repeats)
+            # This catches infinite loops without limiting creativity
+            is_extreme_simple = (
+                len(line_normalized) <= 2 and  # Extremely short (≤2 chars)
+                len(set(line_normalized)) == 1  # Single character repeated
+            )
+
+            if is_extreme_simple:
+                # Only the most basic patterns get limited
+                threshold = 8  # Allow up to 8 even for simplest patterns
+            else:
+                # Everything else: very generous threshold
+                threshold = max_allowed_occurrences
+
+            # Detect repetitive patterns
+            if last_line_normalized and line_normalized == last_line_normalized:
                 repeat_count += 1
-                # Allow up to 3 repetitions, then stop
-                if repeat_count <= 3:
+                if repeat_count <= threshold:
                     cleaned.append(line)
                 else:
-                    # Stop adding - we've hit a repetitive pattern
+                    # Only stop on truly extreme repetition
                     break
             else:
-                repeat_count = 0
-                last_line = line_stripped
+                repeat_count = 1
+                last_line_normalized = line_normalized
                 cleaned.append(line)
+
+        # Final cleanup: remove trailing empty lines
+        while cleaned and not cleaned[-1].strip():
+            cleaned.pop()
 
         return cleaned
 
@@ -539,27 +566,32 @@ class StreamingValidator:
     def _detect_repetition(self) -> bool:
         """
         Detect if we're getting repetitive content in real-time.
-        Checks the last few complete lines.
+        RELAXED: Only stops on EXTREME repetition (12+ identical lines).
+        Allows creative patterns and legitimate structure.
 
         Returns:
-            True if repetition detected, False otherwise
+            True if extreme repetition detected, False otherwise
         """
         # Split accumulated content into lines
         lines = self.accumulated.split("\n")
 
-        # Need at least 4 lines to detect repetition
-        if len(lines) < 4:
+        # Need at least 12 lines to detect EXTREME repetition
+        if len(lines) < 12:
             return False
 
-        # Check the last few lines
-        recent_lines = [line.strip() for line in lines[-5:] if line.strip()]
+        # Check the last several lines
+        recent_lines = [line.strip() for line in lines[-15:] if line.strip()]
 
-        if len(recent_lines) < 3:
+        if len(recent_lines) < 12:
             return False
 
-        # Check if the last 3 lines are identical
-        if len(set(recent_lines[-3:])) == 1:
-            # Same line repeated 3 times - likely stuck
+        # Normalize lines (remove all spacing)
+        normalized = [''.join(line.split()) for line in recent_lines[-12:]]
+
+        # Only stop on EXTREME cases: 12+ identical lines
+        # This catches infinite loops without limiting creativity
+        if len(set(normalized)) == 1 and normalized[0]:
+            # Same pattern repeated 12+ times - definitely stuck in loop
             return True
 
         return False
@@ -572,6 +604,9 @@ class StreamingValidator:
         Returns:
             Fully cleaned and validated content
         """
-        # Now do the heavy lifting: alignment, trailing space removal, etc.
+        # If we stopped due to repetition, the accumulated content already has the repetition
+        # The clean() method will further process it
+
+        # Do the heavy lifting: alignment, trailing space removal, repetition removal, etc.
         cleaned, _ = self.validator.validate_and_clean(self.accumulated, strict=False)
         return cleaned

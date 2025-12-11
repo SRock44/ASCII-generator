@@ -6,14 +6,24 @@ from rich.live import Live
 import config
 import re
 import time
+from colorizer import ASCIIColorizer
 
 
 class Renderer:
     """Terminal renderer using Rich library."""
     
-    def __init__(self):
-        """Initialize renderer."""
+    def __init__(self, prompt: str = "", mode: str = "art"):
+        """
+        Initialize renderer.
+
+        Args:
+            prompt: User's original prompt for context-aware coloring
+            mode: Generation mode ('art', 'chart', 'diagram')
+        """
         self.console = Console()
+        self.colorizer = ASCIIColorizer(prompt=prompt, mode=mode)
+        self.prompt = prompt
+        self.mode = mode
     
     def render_ascii(self, content: str, title: Optional[str] = None, use_colors: bool = True):
         """
@@ -106,9 +116,9 @@ class Renderer:
         if title:
             self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
         
-        # Apply colors if enabled
+        # Apply intelligent colors if enabled
         if use_colors:
-            colored_content = self._apply_ascii_colors(content)
+            colored_content = self.colorizer.colorize(content)
             self.console.print(colored_content)
         else:
             # Use monospace font for ASCII art
@@ -295,14 +305,14 @@ class Renderer:
                     if i == len(current_lines) - 1 and not accumulated_content.endswith("\n"):
                         # Last incomplete line - show dimmed
                         if use_colors:
-                            colored_line = self._apply_ascii_colors_to_line(line, is_incomplete=True)
+                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=True)
                             display_text.append(colored_line)
                         else:
                             display_text.append(line, style="dim white")
                     else:
                         # Complete line
                         if use_colors:
-                            colored_line = self._apply_ascii_colors_to_line(line, is_incomplete=False)
+                            colored_line = self.colorizer.colorize_line(line, i, is_incomplete=False)
                             display_text.append(colored_line)
                         else:
                             display_text.append(line, style="white")

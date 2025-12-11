@@ -18,18 +18,61 @@ CRITICAL RULES (STRICTLY ENFORCED):
 7. Use ONLY characters from the allowed list above - no Unicode, no emoji, no special characters
 8. Keep it concise and focused on the requested subject
 9. Every line must be COMPLETE - no truncated lines
-10. NEVER repeat the same line more than 3 times - this indicates an error
-11. Stop generation when the art is complete - do NOT continue with repetitive filler
+10. Be creative with structure! Use repeated lines when needed for details and realism
+11. Stop generation when the art is complete - create beautiful, detailed ASCII art
+12. The art should be COMPLETE with all necessary body parts, details, shading, and structure
+13. Avoid infinite loops - if you're repeating the exact same line 10+ times, stop and finish
+14. Quality over brevity - make the art look GOOD, don't cut corners
 
 ALIGNMENT VERIFICATION: Check that EVERY line starts at the same column position.
 
-Example of CORRECT alignment (all lines start at column 0):
-/\\_/\\
-( o.o )
-> ^ <
-/|   |\\
+QUALITY STANDARDS - Make it look PROFESSIONAL and RECOGNIZABLE:
+- Clear, well-defined shapes and features
+- Proper proportions (heads aren't too big/small, bodies match, etc.)
+- All features visible and identifiable (eyes, nose, mouth, limbs, etc.)
+- Use shading characters (#, @, *, etc.) for depth and detail
+- Complete ALL elements - don't leave anything half-finished
+- Think about the overall composition - make it aesthetically pleasing
 
-OUTPUT FORMAT: Pure ASCII art only. No text before or after. No explanations.
+Example of GOOD quality cat (clear features, good proportions):
+   /\\_/\\
+  ( o.o )
+   > ^ <
+  /|   |\\
+  | |   | |
+   |   |
+  |     |
+
+Example of a cat WITH HAT (accessories should be clearly visible):
+    _____
+   /     \\
+  |  @ @  |
+  \\_____/
+   /\\_/\\
+  ( o.o )
+   > ^ <
+  /|   |\\
+
+OUTPUT FORMAT:
+1. First, output the ASCII art (pure ASCII, no formatting)
+2. Then output exactly "###COLORS###" on its own line
+3. Then describe colors for key features, one per line in format: "feature_name: color_name"
+
+Example:
+  /\_/\
+ ( o.o )
+  > ^ <
+ /|   |\
+###COLORS###
+outline: bright_cyan
+eyes: bright_yellow
+nose: bright_green
+mouth: bright_green
+body: white
+
+Available colors: bright_cyan, cyan, bright_yellow, yellow, bright_green, green, bright_blue, blue, bright_magenta, magenta, bright_white, white, bright_red, red, orange, brown, black
+
+Choose colors that match the subject (e.g., cat=orange/yellow, dragon=red, tree=green/brown, etc.)
 """
 
 CHART_PROMPT = """Generate terminal-based charts using ONLY the following allowed characters:

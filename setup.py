@@ -23,6 +23,7 @@ setup(
         'rate_limiter',
         'renderer',
         'validators',
+        'colorizer',
     ],
     # Include packages (subfolders with __init__.py)
     packages=['ai', 'generators', 'parsers'],

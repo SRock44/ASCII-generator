@@ -4,9 +4,11 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
 
 ## Features
 
+-  **Intelligent Context-Aware Coloring** - Beautiful colors based on what you're drawing (NEW!)
 -  **ASCII Art Generation** - Create detailed ASCII art from text descriptions
--  **Chart Generation** - Generate bar charts, line charts, and more
--  **Diagram Generation** - Create flowcharts and architecture diagrams
+-  **Chart Generation** - Generate bar charts, line charts, and more with colorful data visualization
+-  **Diagram Generation** - Create flowcharts and architecture diagrams with vibrant colors
+-  **Live Streaming Mode** - Watch your ASCII being drawn in real-time with colors
 -  **Codebase Analysis** - Auto-generate architecture diagrams from local code
 -  **GitHub Integration** - Analyze GitHub repositories and generate diagrams
 -  **Caching** - Fast repeated generation with intelligent caching
@@ -77,10 +79,10 @@ ascii diagram "user login flow" --provider groq
 Generate ASCII art from a text prompt:
 
 ```bash
-python cli.py art "a cat wearing sunglasses"
-python cli.py art "a rocket ship"
-python cli.py art "Python logo"
-python cli.py art "a cat" --explain  # Get an explanation from Groq
+ascii art "a cat wearing sunglasses"
+ascii art "a rocket ship" --live
+ascii art "Python logo" --provider groq
+ascii art "a dragon" --explain  # Get an explanation
 ```
 
 ### Charts
@@ -88,11 +90,10 @@ python cli.py art "a cat" --explain  # Get an explanation from Groq
 Generate terminal-based charts:
 
 ```bash
-python cli.py chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
-python cli.py chart "line chart showing sales growth over 12 months"
-python cli.py chart "bar chart showing monthly sales: January=50, February=75, March=100, April=120, May=90" --provider groq
-python cli.py chart "line chart showing revenue growth over 12 months" --provider groq
-python cli.py chart "bar chart: Q1=100, Q2=150" --explain  # Get an explanation from Groq
+ascii chart "Q1=100, Q2=150, Q3=120, Q4=200"
+ascii chart "sales growth over 12 months" --live
+ascii chart "monthly sales: Jan=50, Feb=75, Mar=100" --provider groq
+ascii chart "Q1=100, Q2=150" --explain  # Get an explanation
 ```
 
 **Example Output:**
@@ -106,9 +107,10 @@ python cli.py chart "bar chart: Q1=100, Q2=150" --explain  # Get an explanation 
 Create flowcharts and diagrams:
 
 ```bash
-python cli.py diagram "flowchart: user login -> authenticate -> dashboard"
-python cli.py diagram "architecture: frontend -> API -> database"
-python cli.py chart "entity relationship diagram of a basic bank account structure" --provider groq
+ascii diagram "user login -> authenticate -> dashboard"
+ascii diagram "frontend -> API -> database" --live
+ascii diagram "oauth2 authentication flow" --provider groq
+ascii diagram "CI/CD pipeline" --orientation left-to-right
 ```
 
 **Example Output:**
@@ -122,8 +124,8 @@ python cli.py chart "entity relationship diagram of a basic bank account structu
 Generate architecture diagrams from local code:
 
 ```bash
-python cli.py codebase /path/to/your/project
-python cli.py codebase .  # Current directory
+ascii codebase /path/to/your/project
+ascii codebase .  # Current directory
 ```
 
 ### GitHub Repository Analysis
@@ -131,41 +133,41 @@ python cli.py codebase .  # Current directory
 Analyze GitHub repositories:
 
 ```bash
-python cli.py github owner/repo-name
-python cli.py github https://github.com/owner/repo
+ascii github owner/repo-name
+ascii github https://github.com/owner/repo
 ```
 
 For private repositories, set `GITHUB_TOKEN` environment variable or use `--token`:
 
 ```bash
 export GITHUB_TOKEN=your_github_token
-python cli.py github owner/private-repo
+ascii github owner/private-repo
 ```
 
 ### Other Commands
 
 **Check configuration:**
 ```bash
-python cli.py check
+ascii check  # Triggers setup wizard if .env doesn't exist
 ```
 
 **Clear cache:**
 ```bash
-python cli.py clear-cache
+ascii clear-cache
 ```
 
 **Disable caching:**
 ```bash
-python cli.py art "prompt" --no-cache
+ascii art "prompt" --no-cache
 ```
 
 **Get explanations:**
 ```bash
-python cli.py art "a cat" --explain
-python cli.py chart "bar chart: Q1=100, Q2=150" --explain
+ascii art "a cat" --explain
+ascii chart "Q1=100, Q2=150" --explain
 ```
 
-The `--explain` flag uses Groq to generate a brief explanation of the generated ASCII art or chart. This is useful for understanding complex visualizations or getting insights about the generated content. **Note:** Requires `GROQ_API_KEY` to be set in your `.env` file.
+The `--explain` flag generates a brief explanation of the ASCII art or chart. Useful for understanding complex visualizations.
 
 ## Configuration
 

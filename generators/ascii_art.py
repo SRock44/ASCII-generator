@@ -8,11 +8,11 @@ from renderer import Renderer
 
 class ASCIIArtGenerator:
     """Generator for ASCII art."""
-    
+
     def __init__(self, ai_client: AIClient, cache: Cache = None, rate_limiter: RateLimiter = None):
         """
         Initialize ASCII art generator.
-        
+
         Args:
             ai_client: AI client instance
             cache: Optional cache instance
@@ -21,7 +21,7 @@ class ASCIIArtGenerator:
         self.ai_client = ai_client
         self.cache = cache or Cache()
         self.rate_limiter = rate_limiter or RateLimiter()
-        self.renderer = Renderer()
+        # Don't create renderer here - create it with prompt context when needed
     
     def generate(self, prompt: str, use_cache: bool = True) -> str:
         """

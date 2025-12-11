@@ -138,22 +138,22 @@ def art(prompts, no_cache, no_colors, provider, explain, live):
       ascii-gen art "a cat" --explain
     """
     try:
-        renderer = Renderer()
-        
-        # Check if Groq is available for explanations
+        # Check if Groq is available for explanations (use temp renderer for errors)
         if explain and not config.GROQ_API_KEY:
-            renderer.render_error("--explain requires GROQ_API_KEY to be set in .env")
+            Renderer().render_error("--explain requires GROQ_API_KEY to be set in .env")
             sys.exit(1)
-        
+
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="art")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = ASCIIArtGenerator(ai_client, cache, rate_limiter)
-        
+
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
+            # Create renderer with prompt context for intelligent coloring
+            renderer = Renderer(prompt=prompt, mode="art")
             if len(prompts) > 1:
                 renderer.render_info(f"Generating ASCII art {i}/{len(prompts)}: {prompt[:50]}...")
             else:
@@ -199,8 +199,7 @@ def art(prompts, no_cache, no_colors, provider, explain, live):
                         renderer.render_explanation(explanation, title="Explanation")
         
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
@@ -213,29 +212,29 @@ def art(prompts, no_cache, no_colors, provider, explain, live):
 @click.option('--live', is_flag=True, help='Show live progressive drawing animation as chart is generated')
 def chart(prompts, no_cache, provider, explain, live):
     """Generate a chart from one or more text prompts.
-    
+
     Examples:
       ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
       ascii-gen chart "sales data" "revenue growth" --provider groq --no-cache
       ascii-gen chart "bar chart: Q1=100, Q2=150" --explain
     """
     try:
-        renderer = Renderer()
-        
         # Check if Groq is available for explanations
         if explain and not config.GROQ_API_KEY:
-            renderer.render_error("--explain requires GROQ_API_KEY to be set in .env")
+            Renderer().render_error("--explain requires GROQ_API_KEY to be set in .env")
             sys.exit(1)
-        
+
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="chart")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = ChartGenerator(ai_client, cache, rate_limiter)
-        
+
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
+            # Create renderer with prompt context for intelligent coloring
+            renderer = Renderer(prompt=prompt, mode="chart")
             if len(prompts) > 1:
                 renderer.render_info(f"Generating chart {i}/{len(prompts)}: {prompt[:50]}...")
             else:
@@ -281,8 +280,7 @@ def chart(prompts, no_cache, provider, explain, live):
                         renderer.render_explanation(explanation, title="Explanation")
         
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
@@ -296,29 +294,29 @@ def chart(prompts, no_cache, provider, explain, live):
 @click.option('--live', is_flag=True, help='Show live progressive drawing animation as diagram is generated')
 def diagram(prompts, no_cache, orientation, provider, live):
     """Generate a diagram from one or more text prompts.
-    
+
     Examples:
       ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
       ascii-gen diagram "workflow" "auth flow" --orientation left-to-right --provider groq --no-cache
     """
     try:
-        renderer = Renderer()
-        
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
             orientation = 'top-to-bottom'
         elif orientation.lower() in ['l2r', 'left-to-right', 'horizontal', 'lr']:
             orientation = 'left-to-right'
-        
+
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="diagram")
         cache = Cache() if not no_cache else None
         rate_limiter = RateLimiter()
         generator = DiagramGenerator(ai_client, cache, rate_limiter)
-        
+
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
+            # Create renderer with prompt context for intelligent coloring
+            renderer = Renderer(prompt=prompt, mode="diagram")
             if len(prompts) > 1:
                 renderer.render_info(f"Generating diagram {i}/{len(prompts)}: {prompt[:50]}...")
             else:
@@ -347,8 +345,7 @@ def diagram(prompts, no_cache, orientation, provider, live):
                     renderer.render_ascii(result, title=title)
         
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
@@ -404,8 +401,7 @@ def codebase(path, no_cache, max_files, orientation, provider):
             renderer.render_ascii(result, title="Architecture Diagram")
         
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
@@ -467,8 +463,7 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
             renderer.render_ascii(result, title="Architecture Diagram")
         
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
@@ -481,8 +476,7 @@ def clear_cache():
         renderer = Renderer()
         renderer.render_success("Cache cleared successfully")
     except Exception as e:
-        renderer = Renderer()
-        renderer.render_error(str(e))
+        Renderer().render_error(str(e))
         sys.exit(1)
 
 
