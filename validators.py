@@ -92,7 +92,7 @@ class ASCIIValidator:
             self.max_width = 150
         else:  # Default to art mode
             self.allowed_chars = self.ASCII_ART_CHARS
-            self.max_lines = 50
+            self.max_lines = 20  # ascii-art.de style: 4-12 ideal, max 20
             self.max_width = 80
 
     def validate(self, content: str, strict: bool = False) -> ValidationResult:
@@ -185,90 +185,112 @@ class ASCIIValidator:
         if self.mode == "art":
             non_empty_lines = [line.strip() for line in lines if line.strip()]
             if len(non_empty_lines) >= 3:
-                # Check for excessive repetition (indicates broken output)
                 normalized_lines = [''.join(line.split()) for line in non_empty_lines]
-                unique_patterns = len(set(normalized_lines))
                 total_lines = len(normalized_lines)
-                
-                # Check for patterns that appear many times (even if not consecutive)
+
+                # LINE COUNT CHECK (ascii-art.de principle: 4-12 lines ideal)
+                if total_lines > 20:
+                    errors.append(
+                        f"Too many lines ({total_lines}) - ASCII art should be 4-12 lines. "
+                        "Simplify to just iconic features."
+                    )
+                elif total_lines > 15:
+                    warnings.append(
+                        f"Art is long ({total_lines} lines) - consider reducing to 4-12 lines for better impact."
+                    )
+
+                # CONSECUTIVE REPETITION CHECK (max 3 identical consecutive lines)
+                consecutive_count = 1
+                max_consecutive = 1
+                for i in range(1, len(normalized_lines)):
+                    if normalized_lines[i] == normalized_lines[i-1] and normalized_lines[i]:
+                        consecutive_count += 1
+                        max_consecutive = max(max_consecutive, consecutive_count)
+                    else:
+                        consecutive_count = 1
+
+                if max_consecutive > 3:
+                    errors.append(
+                        f"Repetitive loop detected: {max_consecutive} consecutive identical lines. "
+                        "Max 3 consecutive identical lines allowed."
+                    )
+
+                # TOTAL PATTERN REPETITION (any pattern appearing 5+ times)
                 pattern_counts = Counter(normalized_lines)
                 max_pattern_count = max(pattern_counts.values()) if pattern_counts else 0
-                
-                # If any single pattern appears 6+ times, that's excessive repetition (was 5, now 6 to be less aggressive)
-                if max_pattern_count >= 6:
+
+                if max_pattern_count >= 5:
                     most_common = pattern_counts.most_common(1)[0]
                     errors.append(
-                        f"Output has excessive repetition: pattern '{most_common[0][:20]}...' appears {most_common[1]} times. "
-                        "This suggests the AI got stuck in a repetitive loop. Please vary the pattern and complete the art."
+                        f"Pattern '{most_common[0][:15]}' appears {most_common[1]} times - too repetitive."
                     )
-                
-                # If we have many lines but very few unique patterns, it's likely broken
-                # More strict: catch repetition earlier (8+ lines with <4 unique patterns)
-                elif total_lines >= 8 and unique_patterns < 4:
-                    errors.append(
-                        f"Output appears broken: {total_lines} lines but only {unique_patterns} unique patterns. "
-                        "This suggests the AI got stuck in a repetitive loop."
-                    )
-                # Also catch moderate repetition (15+ lines with <6 unique patterns)
-                elif total_lines >= 15 and unique_patterns < 6:
-                    errors.append(
-                        f"Output has excessive repetition: {total_lines} lines but only {unique_patterns} unique patterns. "
-                        "This suggests the AI got stuck in a repetitive loop."
-                    )
-                
-                # Check for excessive density (ascii-art.de principle: 40-60% filled space)
-                all_chars = ''.join(non_empty_lines)
+
+                # DENSITY CHECK (ascii-art.de: 40-60% filled)
+                # Include positioning whitespace (leading spaces) in calculation
+                original_lines = [line for line in lines if line.strip()]
+                all_chars = ''.join(original_lines)
                 spaces = all_chars.count(' ')
                 total_chars = len(all_chars)
                 filled_ratio = (total_chars - spaces) / total_chars if total_chars > 0 else 0
 
-                # Warn if too dense (> 65% filled)
-                if filled_ratio > 0.65:
+                if filled_ratio > 0.70:
                     errors.append(
-                        f"Output is too dense ({int(filled_ratio * 100)}% filled) - use more negative space for clarity and recognition. "
-                        "Quality ASCII art is typically 40-60% filled space."
+                        f"Too dense ({int(filled_ratio * 100)}% filled) - should be 40-60%. "
+                        "Use more negative space."
                     )
-                # Suggest minimalism if approaching too dense (> 60% filled)
                 elif filled_ratio > 0.60:
                     warnings.append(
-                        f"Output is fairly dense ({int(filled_ratio * 100)}% filled). Consider using more strategic empty space - "
-                        "quality ASCII art is typically 40-60% filled."
+                        f"Fairly dense ({int(filled_ratio * 100)}% filled) - aim for 40-60%."
                     )
-                
-                # Check for structural variety (should have different line lengths/patterns)
+
+                # ICONIC FEATURES CHECK (should have distinct feature characters)
+                feature_chars = set('oO@.^(){}[]<>vV/\\|_-=~')
+                all_content = ''.join(non_empty_lines)
+                feature_count = sum(1 for c in all_content if c in feature_chars)
+                unique_features = len(set(c for c in all_content if c in feature_chars))
+
+                # Should have at least 2 different feature character types
+                if unique_features < 2 and total_lines >= 4:
+                    warnings.append(
+                        "Lacks iconic features - use varied characters like o O ( ) / \\ for eyes, curves, etc."
+                    )
+
+                # STRUCTURAL VARIETY CHECK
                 line_lengths = [len(line) for line in non_empty_lines]
                 unique_lengths = len(set(line_lengths))
-                if unique_lengths < 2 and total_lines > 5:
+                if unique_lengths < 2 and total_lines > 4:
                     warnings.append(
-                        "All lines have similar length - output may lack structural variety"
+                        "All lines same length - vary structure for better art."
                     )
-                
-                # Check for symmetry (art should be symmetrical for creatures/animals)
-                # Simple check: see if lines are roughly centered and balanced
-                asymmetry_count = 0
+
+                # SYMMETRY CHECK (improved - checks character mirroring)
+                mirror_pairs = {'(': ')', ')': '(', '/': '\\', '\\': '/', '[': ']', ']': '[',
+                               '{': '}', '}': '{', '<': '>', '>': '<'}
+                asymmetry_score = 0
                 for line in non_empty_lines:
-                    if len(line) > 3:  # Only check lines with content
-                        # Remove leading/trailing spaces to find actual content
-                        content = line.strip()
-                        if len(content) > 3:
-                            # Check if line appears roughly centered (not heavily skewed)
-                            # Count non-space chars on left vs right half
-                            mid = len(content) // 2
-                            left_half = content[:mid]
-                            right_half = content[mid:]
-                            left_chars = len([c for c in left_half if c != ' '])
-                            right_chars = len([c for c in right_half if c != ' '])
-                            
-                            # If one side has significantly more characters, it's asymmetric
-                            if left_chars > 0 and right_chars > 0:
-                                ratio = max(left_chars, right_chars) / min(left_chars, right_chars)
-                                if ratio > 2.0:  # One side has 2x more characters
-                                    asymmetry_count += 1
-                
-                # If many lines are asymmetric, warn about it
-                if asymmetry_count > len(non_empty_lines) * 0.3:  # More than 30% of lines
+                    content = line.strip()
+                    if len(content) >= 5:  # Only check substantial lines
+                        mid = len(content) // 2
+                        left = content[:mid]
+                        right = content[mid+1:] if len(content) % 2 else content[mid:]
+                        right_reversed = right[::-1]
+
+                        # Check if mirrored characters match
+                        matches = 0
+                        checks = 0
+                        for l_char, r_char in zip(left, right_reversed):
+                            if l_char in mirror_pairs or r_char in mirror_pairs:
+                                checks += 1
+                                expected = mirror_pairs.get(l_char, l_char)
+                                if r_char == expected or l_char == r_char:
+                                    matches += 1
+
+                        if checks > 0 and matches / checks < 0.5:
+                            asymmetry_score += 1
+
+                if asymmetry_score > len(non_empty_lines) * 0.4:
                     warnings.append(
-                        "Output lacks symmetry - art should be balanced and centered for better appearance"
+                        "Art appears asymmetric - ensure left/right sides mirror each other."
                     )
 
         # 9. Mode-specific validations
@@ -809,6 +831,125 @@ class ASCIIValidator:
         # Ultra-fast character filtering using list comprehension
         # Set lookup is O(1), this is blazingly fast
         return ''.join(c for c in chunk if c in self.allowed_chars or c == '\n')
+
+
+def measure_art_quality(content: str) -> dict:
+    """
+    Measure ASCII art quality based on ascii-art.de principles.
+    Returns a score (0-100) and detailed metrics.
+
+    Args:
+        content: ASCII art content
+
+    Returns:
+        Dict with 'score' (0-100), 'grade' (A-F), and 'metrics' breakdown
+    """
+    if not content or not content.strip():
+        return {'score': 0, 'grade': 'F', 'metrics': {}}
+
+    lines = [l for l in content.split('\n') if l.strip()]
+    if not lines:
+        return {'score': 0, 'grade': 'F', 'metrics': {}}
+
+    # Metrics
+    line_count = len(lines)
+    all_content = ''.join(lines)
+    total_chars = len(all_content)
+    spaces = all_content.count(' ')
+    fill_ratio = (total_chars - spaces) / total_chars if total_chars > 0 else 0
+
+    # Feature characters (eyes, curves, structural)
+    feature_chars = set('oO@.^(){}[]<>vV/\\|_-=~')
+    unique_features = len(set(c for c in all_content if c in feature_chars))
+
+    # Consecutive repetition
+    normalized = [''.join(l.split()) for l in lines]
+    max_consecutive = 1
+    consecutive = 1
+    for i in range(1, len(normalized)):
+        if normalized[i] == normalized[i-1] and normalized[i]:
+            consecutive += 1
+            max_consecutive = max(max_consecutive, consecutive)
+        else:
+            consecutive = 1
+
+    # Line length variety
+    lengths = [len(l.strip()) for l in lines]
+    length_variety = len(set(lengths)) / len(lengths) if lengths else 0
+
+    # Scoring (each metric contributes to total)
+    scores = {}
+
+    # Line count score (4-12 ideal: 100, 13-15: 70, 16-20: 40, >20: 0)
+    if 4 <= line_count <= 12:
+        scores['line_count'] = 100
+    elif line_count <= 15:
+        scores['line_count'] = 70
+    elif line_count <= 20:
+        scores['line_count'] = 40
+    else:
+        scores['line_count'] = 0
+
+    # Density score (40-60% ideal: 100, 61-70%: 60, >70%: 20)
+    if 0.40 <= fill_ratio <= 0.60:
+        scores['density'] = 100
+    elif fill_ratio < 0.40:
+        scores['density'] = 70  # Too sparse but acceptable
+    elif fill_ratio <= 0.70:
+        scores['density'] = 60
+    else:
+        scores['density'] = 20
+
+    # Feature variety score (3+ features: 100, 2: 70, 1: 40, 0: 0)
+    if unique_features >= 3:
+        scores['features'] = 100
+    elif unique_features >= 2:
+        scores['features'] = 70
+    elif unique_features >= 1:
+        scores['features'] = 40
+    else:
+        scores['features'] = 0
+
+    # Repetition score (1-3 consecutive: 100, 4: 60, 5+: 0)
+    if max_consecutive <= 3:
+        scores['repetition'] = 100
+    elif max_consecutive == 4:
+        scores['repetition'] = 60
+    else:
+        scores['repetition'] = 0
+
+    # Variety score (based on line length diversity)
+    scores['variety'] = int(length_variety * 100)
+
+    # Calculate weighted total
+    weights = {'line_count': 0.25, 'density': 0.25, 'features': 0.2,
+               'repetition': 0.2, 'variety': 0.1}
+    total_score = sum(scores[k] * weights[k] for k in weights)
+
+    # Grade
+    if total_score >= 90:
+        grade = 'A'
+    elif total_score >= 80:
+        grade = 'B'
+    elif total_score >= 70:
+        grade = 'C'
+    elif total_score >= 60:
+        grade = 'D'
+    else:
+        grade = 'F'
+
+    return {
+        'score': int(total_score),
+        'grade': grade,
+        'metrics': {
+            'line_count': line_count,
+            'fill_ratio': round(fill_ratio * 100, 1),
+            'unique_features': unique_features,
+            'max_consecutive_repeat': max_consecutive,
+            'length_variety': round(length_variety * 100, 1),
+            'scores': scores
+        }
+    }
 
 
 class StreamingValidator:

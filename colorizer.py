@@ -84,12 +84,8 @@ class ASCIIColorizer:
 
     def parse_color_hints(self, content: str) -> str:
         """
-        Extract color hints from AI output and return clean ASCII art.
-        Supports multiple formats:
-        - Feature-based: "outline: bright_cyan"
-        - Character-based: "char /: bright_cyan" or "char o: bright_yellow"
-        - Region-based: "region top: orange" or "region middle: yellow"
-        - Default: "default: white"
+        Strip color hints section from AI output and return clean ASCII art.
+        NOTE: Color hint parsing is disabled for now - using hardcoded defaults.
 
         Args:
             content: Full AI output (art + color hints)
@@ -98,73 +94,43 @@ class ASCIIColorizer:
             Clean ASCII art without color hints
         """
         if "###COLORS###" not in content:
-            # No color hints, return as-is
             return content
 
-        # Split content
+        # Just strip the color hints section, don't parse it
+        # Split on ###COLORS### and keep only the art part
         parts = content.split("###COLORS###")
-        ascii_art = parts[0].strip()
+        return parts[0].rstrip()
 
-        # Parse color hints if present
-        if len(parts) > 1:
-            color_lines = parts[1].strip().split("\n")
-            for line in color_lines:
-                line = line.strip()
-                if not line or ":" not in line:
-                    continue
-                
-                key, color = line.split(":", 1)
-                key = key.strip().lower()
-                color = color.strip()
-                
-                # Parse different formats
-                if key.startswith("char "):
-                    # Character-based: "char /: bright_cyan"
-                    char = key[5:].strip()
-                    if len(char) == 1:
-                        self.char_colors[char] = self._normalize_color(color)
-                elif key.startswith("region "):
-                    # Region-based: "region top: orange"
-                    region = key[7:].strip()
-                    self.region_colors[region] = self._normalize_color(color)
-                elif key == "default":
-                    # Default color
-                    self.default_color = self._normalize_color(color)
-                else:
-                    # Feature-based: "outline: bright_cyan"
-                    self.color_hints[key] = self._normalize_color(color)
-
-        return ascii_art
-
-    def _get_color_for_char(self, char: str, line_idx: int, total_lines: int, 
+    def _get_color_for_char(self, char: str, line_idx: int, total_lines: int,
                            char_type: Optional[str] = None) -> Optional[str]:
         """
-        Get color for a character, prioritizing AI-provided colors.
-        
+        Get color for a character from AI-provided SPECIFIC overrides only.
+
         Priority order:
-        1. Character-specific color from AI (char_colors)
-        2. Feature-based color from AI (color_hints) - if char_type provided
+        1. Character-specific color from AI (char_colors) - e.g., "char /: cyan"
+        2. Feature-based color from AI (color_hints) - only if char_type provided
         3. Region-based color from AI (region_colors)
-        4. Default color from AI
-        5. Mode-specific hardcoded defaults
-        
+
+        NOTE: Does NOT return default_color - that's handled by the calling function
+        as the final fallback after character-type based coloring.
+
         Args:
             char: Character to colorize
             line_idx: Current line index
             total_lines: Total number of non-empty lines
             char_type: Optional character type hint (e.g., 'outline', 'eyes', 'body')
-            
+
         Returns:
-            Color name as string, or None if no AI color found
+            Color name as string, or None to let caller apply type-based coloring
         """
-        # 1. Check character-specific color from AI
+        # 1. Check character-specific color from AI (highest priority)
         if char in self.char_colors:
             return self.char_colors[char]
-        
-        # 2. Check feature-based color from AI (if char_type provided)
+
+        # 2. Check feature-based color from AI (if char_type explicitly provided)
         if char_type and char_type in self.color_hints:
             return self.color_hints[char_type]
-        
+
         # 3. Check region-based color from AI
         if total_lines > 0:
             region_ratio = line_idx / total_lines if total_lines > 0 else 0
@@ -177,12 +143,8 @@ class ASCIIColorizer:
             else:
                 if 'bottom' in self.region_colors:
                     return self.region_colors['bottom']
-        
-        # 4. Check default color from AI
-        if self.default_color:
-            return self.default_color
-        
-        # 5. Fall back to None (will use mode-specific defaults)
+
+        # Return None - let caller handle character-type coloring and defaults
         return None
 
     def colorize(self, content: str) -> Text:
@@ -208,8 +170,7 @@ class ASCIIColorizer:
 
     def _colorize_art(self, content: str) -> Text:
         """
-        Colorize ASCII art using AI-suggested colors with smart fallbacks.
-        Prioritizes AI-provided colors over hardcoded rules.
+        Colorize ASCII art using hardcoded default colors.
 
         Args:
             content: ASCII art content
@@ -219,36 +180,14 @@ class ASCIIColorizer:
         """
         text = Text()
         lines = content.split("\n")
-        non_empty_lines = [l for l in lines if l.strip()]
-        total_lines = len(non_empty_lines)
 
-        # Get AI colors with fallbacks
-        outline_color = self.color_hints.get('outline')
-        eyes_color = self.color_hints.get('eyes')
-        nose_color = self.color_hints.get('nose')
-        mouth_color = self.color_hints.get('mouth')
-        body_color = self.color_hints.get('body')
-        hat_color = self.color_hints.get('hat')
-        ears_color = self.color_hints.get('ears')
-        
-        # Get default color from AI if provided
-        default_ai_color = self.default_color
-
-        # Fallback defaults (only if AI didn't provide)
-        if not outline_color:
-            outline_color = default_ai_color or 'bright_cyan'
-        if not eyes_color:
-            eyes_color = default_ai_color or 'bright_yellow'
-        if not nose_color:
-            nose_color = default_ai_color or 'bright_green'
-        if not mouth_color:
-            mouth_color = default_ai_color or 'bright_green'
-        if not body_color:
-            body_color = default_ai_color or 'white'
-        if not hat_color:
-            hat_color = default_ai_color or 'brown'
-        if not ears_color:
-            ears_color = outline_color
+        # Hardcoded colors
+        outline_color = 'bright_cyan'
+        eyes_color = 'bright_yellow'
+        nose_color = 'bright_green'
+        body_color = 'white'
+        dot_color = 'bright_magenta'
+        bracket_color = 'cyan'
 
         for line_idx, line in enumerate(lines):
             if not line.strip():
@@ -256,53 +195,28 @@ class ASCIIColorizer:
                     text.append("\n")
                 continue
 
-            # Detect region
-            non_empty_idx = sum(1 for i in range(line_idx) if lines[i].strip())
-            is_top = non_empty_idx < total_lines * 0.25 if total_lines > 0 else False
-
             for char in line:
-                # Try to get color from AI first (checks char_colors, feature-based, region-based, default)
-                ai_color = self._get_color_for_char(char, non_empty_idx, total_lines)
-                
-                if ai_color:
-                    # Use AI-provided color
-                    text.append(char, style=ai_color)
+                # Structural outlines
+                if char in '/\\|_-=+':
+                    text.append(char, style=outline_color)
+                # Eyes
+                elif char in 'oO@':
+                    text.append(char, style=eyes_color)
+                # Nose/mouth features
+                elif char in '<>v^':
+                    text.append(char, style=nose_color)
+                # Solid blocks
+                elif char in '#█▓▒░':
+                    text.append(char, style=body_color)
+                # Dots and stars
+                elif char in '.*':
+                    text.append(char, style=dot_color)
+                # Parentheses and brackets
+                elif char in '(){}[]':
+                    text.append(char, style=bracket_color)
+                # Everything else
                 else:
-                    # Fall back to character-type based coloring
-                    # Use AI-provided feature colors if available, otherwise use defaults
-                    # Structural outlines
-                    if char in '/\\|_-=+':
-                        color = hat_color if is_top and 'hat' in self.color_hints else outline_color
-                        text.append(char, style=color)
-                    # Eyes
-                    elif char in 'oO@':
-                        text.append(char, style=eyes_color)
-                    # Nose/mouth features
-                    elif char in '<>v^':
-                        text.append(char, style=nose_color)
-                    # Solid blocks
-                    elif char in '#█▓▒░':
-                        text.append(char, style=body_color)
-                    # Dots and stars
-                    elif char in '.*':
-                        # Check if AI provided a color for dots/stars
-                        dot_color = self.color_hints.get('dots') or self.color_hints.get('stars') or default_ai_color or "bright_magenta"
-                        text.append(char, style=dot_color)
-                    # Parentheses and brackets
-                    elif char in '(){}[]':
-                        # Check if AI provided a color for brackets
-                        bracket_color = self.color_hints.get('brackets') or default_ai_color or "cyan"
-                        text.append(char, style=bracket_color)
-                    # Everything else - use body color or default
-                    else:
-                        # Prioritize: body_color (if set by AI) > default_ai_color > 'white'
-                        if body_color and body_color != 'white':
-                            final_color = body_color
-                        elif default_ai_color:
-                            final_color = default_ai_color
-                        else:
-                            final_color = 'white'
-                        text.append(char, style=final_color)
+                    text.append(char, style=body_color)
 
             if line_idx < len(lines) - 1:
                 text.append("\n")
@@ -467,32 +381,21 @@ class ASCIIColorizer:
     def colorize_line(self, line: str, line_idx: int, is_incomplete: bool = False, accumulated_content: str = "") -> Text:
         """
         Colorize a single line (for progressive rendering).
-        Can parse color hints from accumulated content if provided.
 
         Args:
             line: Single line of text
             line_idx: Line number
             is_incomplete: Whether line is still being generated
-            accumulated_content: Optional full accumulated content (for parsing color hints during streaming)
+            accumulated_content: Unused (kept for API compatibility)
 
         Returns:
             Rich Text with colors
         """
-        # If accumulated content is provided, try to parse color hints from it
-        # This allows color hints to be used during streaming once they're available
-        if accumulated_content and "###COLORS###" in accumulated_content:
-            # Parse color hints from accumulated content (this will update self.color_hints, etc.)
-            self.parse_color_hints(accumulated_content)
-        
-        # Strip color hints if present in the line itself
+        # Strip color hints if present in the line
         if "###COLORS###" in line:
             line = line.split("###COLORS###")[0]
-            # Also parse hints from this line
-            self.parse_color_hints(line + "\n###COLORS###")
 
-        # Create a temporary single-line content for colorization
-        # We'll use the full colorize method but with just this line
-        # The color hints should already be parsed if available
+        # Colorize based on mode
         if self.mode == "diagram":
             colored = self._colorize_diagram(line)
         elif self.mode == "chart":
@@ -500,7 +403,7 @@ class ASCIIColorizer:
         else:
             colored = self._colorize_art(line)
 
-        # If incomplete, dim all the colors
+        # If incomplete, dim the colors
         if is_incomplete:
             dim_text = Text()
             for span in colored._spans:

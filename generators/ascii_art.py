@@ -77,63 +77,60 @@ class ASCIIArtGenerator:
 
     def _build_feedback_prompt(self, original_prompt: str, validation: ValidationResult, previous_output: str) -> str:
         """
-        Build a feedback prompt that includes validation errors for regeneration.
-        
+        Build a concise feedback prompt with specific fixes for regeneration.
+
         Args:
             original_prompt: Original user prompt
             validation: Validation result with errors/warnings
             previous_output: The previous output that failed validation
-            
+
         Returns:
             Enhanced prompt with feedback
         """
-        feedback_lines = [
-            f"Your previous attempt to generate ASCII art for '{original_prompt}' had quality issues:",
-            ""
-        ]
-        
-        # Add errors
-        if validation.errors:
-            feedback_lines.append("CRITICAL ISSUES FOUND:")
-            for error in validation.errors:
-                feedback_lines.append(f"- {error}")
+        # Count lines in previous output for specific feedback
+        prev_lines = len([l for l in previous_output.split('\n') if l.strip()])
+
+        feedback_lines = [f"RETRY for '{original_prompt}' - previous attempt had issues:", ""]
+
+        # Add specific, actionable fixes based on errors
+        fixes = []
+        for error in validation.errors:
+            if "lines" in error.lower() or "too many" in error.lower():
+                fixes.append(f"REDUCE: Cut from {prev_lines} lines to 4-10 lines. Show only 2-3 iconic features.")
+            elif "dense" in error.lower():
+                fixes.append("SPARSE: Use 40-60% filled space. Add more whitespace between elements.")
+            elif "repetitive" in error.lower() or "consecutive" in error.lower():
+                fixes.append("VARY: No more than 3 identical consecutive lines. Each line should differ.")
+            elif "pattern" in error.lower():
+                fixes.append("DIVERSIFY: Use different characters/structures throughout.")
+            else:
+                fixes.append(f"FIX: {error}")
+
+        for warning in validation.warnings:
+            if "symmetr" in warning.lower():
+                fixes.append("MIRROR: Left side must mirror right side. Use ( ) / \\ pairs correctly.")
+            elif "feature" in warning.lower():
+                fixes.append("FEATURES: Add iconic chars like o O for eyes, /\\ for ears, ( ) for curves.")
+            elif "variety" in warning.lower() or "length" in warning.lower():
+                fixes.append("SHAPE: Vary line lengths to create natural silhouette.")
+
+        if fixes:
+            feedback_lines.append("SPECIFIC FIXES NEEDED:")
+            for fix in fixes[:5]:  # Max 5 fixes to keep it focused
+                feedback_lines.append(f"- {fix}")
             feedback_lines.append("")
-        
-        # Add warnings
-        if validation.warnings:
-            feedback_lines.append("WARNINGS:")
-            for warning in validation.warnings:
-                feedback_lines.append(f"- {warning}")
-            feedback_lines.append("")
-        
-        # Add specific guidance emphasizing ascii-art.de minimalist principles
+
+        # Add concise reminder of good art
         feedback_lines.extend([
-            "PLEASE REGENERATE with these corrections (using ascii-art.de minimalist principles):",
-            "1. Use STRATEGIC NEGATIVE SPACE: Leave empty areas to define form - quality ASCII art is 40-60% filled, NOT densely packed",
-            "2. Focus on ICONIC FEATURES: Start with eyes, ears, nose - minimal, recognizable elements, not filling space",
-            "3. SIMPLIFY: Choose fewer, more meaningful characters rather than complex variety - less is more",
-            "4. Avoid repetition: Never repeat the same line pattern more than 4-5 times",
-            "5. Create RECOGNIZABLE shapes: The output must INSTANTLY be recognizable as the requested subject",
-            "6. BREATHING ROOM: Leave space around features to prevent visual clutter",
-            "7. ENSURE SYMMETRY: For creatures, animals, and symmetrical objects, make sure both sides mirror each other perfectly",
-            "8. Center your art: Count characters on left and right sides to ensure perfect balance",
-            "9. Keep it MINIMAL: 4-12 lines is ideal - don't over-detail, stop when recognizable",
+            "REFERENCE - Good ascii-art.de style:",
+            "  /\\_/\\     <- 4-8 lines",
+            " ( o.o )    <- 50% whitespace",
+            "  > ^ <     <- iconic features clear",
+            " /|   |\\    <- symmetric",
             "",
-            f"Original request: {original_prompt}",
-            "",
-            "Generate NEW, IMPROVED ASCII art that is INSTANTLY RECOGNIZABLE as '{original_prompt}' and addresses all the issues above."
+            f"NOW: Regenerate '{original_prompt}' following these fixes."
         ])
-        
-        # Add symmetry-specific feedback if asymmetry was detected
-        symmetry_warnings = [w for w in validation.warnings if "symmetry" in w.lower() or "balanced" in w.lower()]
-        if symmetry_warnings:
-            feedback_lines.insert(-3, "")
-            feedback_lines.insert(-3, "SYMMETRY ISSUE DETECTED:")
-            feedback_lines.insert(-3, "- Your art is not symmetrical - both left and right sides should mirror each other")
-            feedback_lines.insert(-3, "- Count characters on each side of the center to ensure perfect balance")
-            feedback_lines.insert(-3, "- Center your art properly - equal spacing and characters on both sides")
-            feedback_lines.insert(-3, "")
-        
+
         return "\n".join(feedback_lines)
 
     def _has_quality_issues(self, validation: ValidationResult) -> bool:
