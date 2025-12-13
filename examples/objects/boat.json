@@ -1,0 +1,42 @@
+{
+  "subject": "boat",
+  "keywords": [
+    "boat",
+    "ship",
+    "sailboat",
+    "yacht"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "_\n                              (_)\n               --\"\"-------   0/      ^^\n     .___...../ /__| |__\\ \\_/H__,      ^^\n      \\                        /\n    #####^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~\\O/~~\\Q/~^~^~rr",
+      "lines": 6,
+      "width": 54,
+      "density": 0.49
+    },
+    {
+      "art": ".  o ..                  \n     o . o o.o                \n          ...oo               \n            __[]__            \n         __|_o_o_o\\__         \n         \\\"\"\"\"\"\"\"\"\"\"/         \n          \\. ..  . /          \n     ^^^^^^^^^^^^^^^^^^^^   unknown",
+      "lines": 8,
+      "width": 35,
+      "density": 0.33
+    },
+    {
+      "art": "_\n    /|\\\n   /_|_\\\n ____|____\n \\_o_o_o_/\n~~ |     ~~~~~\n___t_________ \n\nunknown",
+      "lines": 9,
+      "width": 14,
+      "density": 0.77
+    },
+    {
+      "art": "_~\n    _~ )_)_~\n    )_))_))_)\n    _!__!__!_\n    \\______t/\nunknown",
+      "lines": 6,
+      "width": 13,
+      "density": 0.72
+    },
+    {
+      "art": "_~  _~\n   __|=|_|=|__\n   \\ o.o.o.oY/\n    \\_______/\nunknown",
+      "lines": 5,
+      "width": 14,
+      "density": 0.76
+    }
+  ]
+}

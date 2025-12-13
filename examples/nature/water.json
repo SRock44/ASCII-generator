@@ -1,0 +1,15 @@
+{
+  "subject": "water",
+  "keywords": [
+    "water"
+  ],
+  "category": "nature",
+  "examples": [
+    {
+      "art": ".-'\"\"\"`-.\n(         )\n|`-.___.-'|\n|.-'\"\"\"`-.|\n|         |\n|`-.___.-'|\n|         |\n|. ' \" ` .|\n|         |\n `-.___.-'       VK\n   Water",
+      "lines": 11,
+      "width": 19,
+      "density": 0.59
+    }
+  ]
+}

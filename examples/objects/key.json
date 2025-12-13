@@ -1,0 +1,33 @@
+{
+  "subject": "key",
+  "keywords": [
+    "key"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "ad8888888888ba\n dP'         `\"8b,\n 8  ,aaa,       \"Y888a     ,aaaa,     ,aaa,  ,aa,\n 8  8' `8           \"88baadP\"\"\"\"YbaaadP\"\"\"YbdP\"\"Yb\n 8  8   8              \"\"\"        \"\"\"      \"\"    8b\n 8  8, ,8         ,aaaaaaaaaaaaaaaaaaaaaaaaddddd88P\n 8  `\"\"\"'       ,d8\"\"\n Yb,         ,ad8\"    Normand Veilleux\n  \"Y8888888888P\"",
+      "lines": 9,
+      "width": 51,
+      "density": 0.59
+    },
+    {
+      "art": ".--.\n              /.-. '----------.\n              \\'-' .--\"--\"\"-\"-'\n           jgs '--'",
+      "lines": 4,
+      "width": 31,
+      "density": 0.51
+    },
+    {
+      "art": "____\n   M.K.'97   , =, ( _________\n             | ='  (VvvVvV--'\n             |____(",
+      "lines": 4,
+      "width": 29,
+      "density": 0.53
+    },
+    {
+      "art": "   /      _      \\\n   [] :: (_) :: []\n   [] ::::::::: []\n   [] ::::::::: []\n   [] ::::::::: []\n   [] ::::::::: []\n   [_____________]\n       I     I\n       I_   _I\n        /   \\\n        \\   /\n        (   )   -cfbd-\n        /   \\\n        \\___/",
+      "lines": 14,
+      "width": 22,
+      "density": 0.46
+    }
+  ]
+}

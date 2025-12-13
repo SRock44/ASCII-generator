@@ -1,0 +1,27 @@
+{
+  "subject": "lamp",
+  "keywords": [
+    "lamp"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "_\n  | |\n ( ! )\n  |=|-+\n [___]  MJP",
+      "lines": 5,
+      "width": 11,
+      "density": 0.63
+    },
+    {
+      "art": "_________\n        d         b\n       d           b\n      d             b\n     d               b\n    d                 b\n     ''':::.....:::'''\n            fff\n          .'   '.\n         ^       ^.'--.\n         b       d     ,\n          czzzzzd       ..oOo\nLupino",
+      "lines": 13,
+      "width": 29,
+      "density": 0.28
+    },
+    {
+      "art": ".\n     (|)\n    ((|))\n   (((|)))\n    <===>   Art\n     'O'    Deco\n      H     Floor\n      H     Lamp                  Study Lamp\n      H     :F_P:                    :F_P:\n      H\n      H            _:_              ___o___\n      H           /   \\            (-------)\n    /<=>\\        /_____\\ Desk Lamp  ! | |\n   |\\<=>/|         / \\    :F_P:       |_|\n   |<===>|         \\_/              .=====.\n   -------",
+      "lines": 16,
+      "width": 44,
+      "density": 0.38
+    }
+  ]
+}

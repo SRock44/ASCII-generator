@@ -1,0 +1,41 @@
+{
+  "subject": "dolphin",
+  "keywords": [
+    "dolphin",
+    "dolphins",
+    "porpoise"
+  ],
+  "category": "animals",
+  "examples": [
+    {
+      "art": "__\n     .-'\" (M /--.\n  /  .-/       _....'\n |  '-/      .' |\n |   /      |_\\ |       Miami Dolphins\n  \\  |    /\\|  /\n   '.|   /   .'\n     |  /_.-'\n     | /\n     | |       tre\n    (,-,)",
+      "lines": 11,
+      "width": 38,
+      "density": 0.45
+    },
+    {
+      "art": ",\n             __)\\___ \n         _.-'      .`-.\n   jgs .'/~~```\"~z/~'\"` \n       ^^",
+      "lines": 5,
+      "width": 24,
+      "density": 0.47
+    },
+    {
+      "art": "Miyuki\n\n                      _../|_\n                    ='__   _~-.\n                         \\'  ~-`\\._\n                               |/~`\n                 .    .    .    .    .\n              _.`(._.`(._.`(._.`(._.`(._",
+      "lines": 8,
+      "width": 40,
+      "density": 0.3
+    },
+    {
+      "art": "\"Mystery is the key to enchantment\"             Armando Frazao\n             -_-__-_-               _.'         e`.__\n              -_-__-           _ ,-'..---~~~)/---'~~~\n                _-       _ - '.,',',-       '\n                          -  -_ -_ -",
+      "lines": 5,
+      "width": 62,
+      "density": 0.42
+    },
+    {
+      "art": "_\\`.___              ___,\"/_\n   ctr ,'`,-__.-.``=._    _.=``,-.__-.`'.\n      /,--'-..,7-)/-`\"    \"'-\\(-7,..-'--.\\\n    ,\"`.         '            `         ,'\".",
+      "lines": 4,
+      "width": 44,
+      "density": 0.57
+    }
+  ]
+}

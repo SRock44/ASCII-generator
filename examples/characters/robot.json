@@ -1,0 +1,25 @@
+{
+  "subject": "robot",
+  "keywords": [
+    "robot",
+    "robots",
+    "android",
+    "cyborg",
+    "mech"
+  ],
+  "category": "characters",
+  "examples": [
+    {
+      "art": ";     /        ,--.     \n       [\"]   [\"]  ,<  |__**|    \n      /[_]\\  [~]\\/    |//  |    \n       ] [   OOO      /o|__|   Phs",
+      "lines": 4,
+      "width": 34,
+      "density": 0.39
+    },
+    {
+      "art": "_______\n               _/       \\_\n              / |       | \\\n             /  |__   __|  \\\n            |__/((o| |o))\\__|\n            |      | |      |\n            |\\     |_|     /|\n            | \\           / |\n             \\| /  ___  \\ |/\n              \\ | / _ \\ | /\n               \\_________/\n                _|_____|_\n           ____|_________|____\n          /                   \\  -- Mark Moir",
+      "lines": 14,
+      "width": 45,
+      "density": 0.31
+    }
+  ]
+}

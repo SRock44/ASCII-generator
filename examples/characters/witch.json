@@ -1,0 +1,42 @@
+{
+  "subject": "witch",
+  "keywords": [
+    "witch",
+    "witches",
+    "hag",
+    "sorceress"
+  ],
+  "category": "characters",
+  "examples": [
+    {
+      "art": "`-o./ .    , ' .  .\n    ~    `\n               _.     zz\n          .__/|_. z z          z\n            -\")\\                      z\n        __ //  )\n          ~~/  \\-=,,._\n            ~;;~   `'~`    -.__             ___a:f__\n                                ~ ~ ~  __~~~         ~~ --_",
+      "lines": 9,
+      "width": 59,
+      "density": 0.29
+    },
+    {
+      "art": "/\\\n             . . __/__\\__\n          __ <\">   (('P  _,_\n         __ \\(V)   / \\\\ ((|))\n         __>==\"===(  /=\"======\n                  | /\n                  )/b           ldb",
+      "lines": 7,
+      "width": 35,
+      "density": 0.38
+    },
+    {
+      "art": "____\n     * `./\"\n        /|-*\n  _____/ |_____\n        ``\n [n4biS]",
+      "lines": 6,
+      "width": 15,
+      "density": 0.57
+    },
+    {
+      "art": "/\\\n                    _/__\\_\n                    /( o\\\n               /|  // \\-'\n          __  ( o,    /\\\n            ) / |    / _\\\n     >>>>==(_(__u---(___ )-----\n                       //\n                      /__)ns\n-",
+      "lines": 10,
+      "width": 31,
+      "density": 0.31
+    },
+    {
+      "art": "_|\\_\n             (\"}\n          8--,  .-`*\n          I  /==\\\n          I  |   \\\n          I  /___\\\nsnd",
+      "lines": 7,
+      "width": 20,
+      "density": 0.33
+    }
+  ]
+}

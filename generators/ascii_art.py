@@ -7,6 +7,7 @@ from cache import Cache
 from rate_limiter import RateLimiter
 from renderer import Renderer
 from validators import ASCIIValidator, ValidationResult
+from prompt_builder import PromptBuilder
 
 
 class ASCIIArtGenerator:
@@ -36,6 +37,7 @@ class ASCIIArtGenerator:
         self.rate_limiter = rate_limiter or RateLimiter()
         self.validator = ASCIIValidator(mode="art")
         self.max_retries = max_retries
+        self.prompt_builder = PromptBuilder()  # Lazy-loaded example cache
         # Don't create renderer here - create it with prompt context when needed
 
     def _detect_logo_request(self, prompt: str) -> bool:
@@ -267,8 +269,8 @@ class ASCIIArtGenerator:
                 yield cached
                 return
 
-        # Use appropriate prompt based on mode
-        system_prompt = LOGO_PROMPT if is_logo else ASCII_ART_PROMPT
+        # Build enhanced prompt with relevant examples (lazy-loaded)
+        system_prompt = self.prompt_builder.build(prompt, is_logo=is_logo, max_examples=2)
         
         # Update validator mode if needed
         if is_logo and self.validator.mode != "logo":

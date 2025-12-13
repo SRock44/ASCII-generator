@@ -1,0 +1,24 @@
+{
+  "subject": "phone",
+  "keywords": [
+    "phone",
+    "telephone",
+    "mobile",
+    "cellphone"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "__i\n |---|    \n |[_]|    \n |:::|    \n |:::|    \n `\\   \\   \n   \\_=_\\ jsm",
+      "lines": 7,
+      "width": 12,
+      "density": 0.52
+    },
+    {
+      "art": "________\n          (_]----[_)\n         .~ |.''.|\n         ~. |'..'|\n          `~`----` ldb",
+      "lines": 5,
+      "width": 22,
+      "density": 0.52
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "subject": "mouse",
+  "keywords": [
+    "mouse",
+    "mice",
+    "rat"
+  ],
+  "category": "animals",
+  "examples": [
+    {
+      "art": "()()         ____\n        (..)        /|o  |\n        /\\/\\       /o|  o|\n       c\\db/o...  /o_|_o_|   -Row\n\n         ->Mouse&Cheese<-",
+      "lines": 6,
+      "width": 33,
+      "density": 0.49
+    },
+    {
+      "art": "oO\n  .,;');,    \n     ,;;;;,  ,''.  \n     ' ;;;;;'  ,'   \n       (;;;         \n  PjP ''''",
+      "lines": 6,
+      "width": 20,
+      "density": 0.46
+    },
+    {
+      "art": ".--,       .--,\n    ( (  \\.---./  ) )\n     '.__/o   o\\__.'\n        {=  ^  =}\n         >  -  <\n        /       \\\n       //       \\\\\n      //|   .   |\\\\\n      \"'\\       /'\"_.-~^`'-.\n         \\  _  /--'         `\n   jgs ___)( )(___",
+      "lines": 11,
+      "width": 29,
+      "density": 0.4
+    },
+    {
+      "art": "q-p\n /   \\\n(     )\n `-(-'\n    ) hjw",
+      "lines": 5,
+      "width": 9,
+      "density": 0.52
+    },
+    {
+      "art": "_\n                   (( )_,     ,\n            .--.    \\ '/     /.\\\n                )   / \\=    /O o\\     _\n               (   / _/    /' o O| ,_( ))___     (`\n                `-|   )_  /o_O_'_(  \\'    _ `\\    )\n   jgs            `\"\"\"\"`            =`---<___/---'\n                                        \"`",
+      "lines": 8,
+      "width": 51,
+      "density": 0.3
+    }
+  ]
+}

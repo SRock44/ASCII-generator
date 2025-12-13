@@ -1,0 +1,41 @@
+{
+  "subject": "skull",
+  "keywords": [
+    "skull",
+    "skeleton",
+    "bones"
+  ],
+  "category": "characters",
+  "examples": [
+    {
+      "art": "__ _\n    .'  Y '>,\n   / _   _   \\\n   )(_) (_)(|}\n   {  4A   } /\n    \\uLuJJ/\\l\n    |3    p)/\n    /nnm_n//\n    \\_>-<_/   jjs",
+      "lines": 9,
+      "width": 17,
+      "density": 0.53
+    },
+    {
+      "art": ".-=-=-.\n /       \\\n|         |\n| )     ( |\n\\/ .\\ /. \\/\n(    ^    )\n |.     .|\n ||xxxxx||\n '-._._.-' -anubis",
+      "lines": 9,
+      "width": 18,
+      "density": 0.56
+    },
+    {
+      "art": ",-,,-,   __\n     ______/     /_,'  |\n     \\________________/\n          |\\) (/ |\n       (  | oo   |\n        ) `|  |--'\n       (___^^^^|\n          (____'    -- Elmar Kurgpold",
+      "lines": 8,
+      "width": 37,
+      "density": 0.52
+    },
+    {
+      "art": ",-\"\"\"\"-.\n (        )\n  \\_  0\\0(     \n    L. ^ /\n    L|++|\n    L \"\"'\n-.__L_,-\n\nOjosh!ro",
+      "lines": 9,
+      "width": 15,
+      "density": 0.58
+    },
+    {
+      "art": "|     '       /  |    |             /  |\n     /__      ___ (  /     /__   Y  __  (  _/\n     \\\\--`-'-|`---\\\\ |     \\`--`-'-|`---\\\\/\n      |' _/   ` __/ /       |'__/   ` __/ |\n      '._  W    ,--'        '-.   w   ,--/\n         |_:_._/              |'_._._/  /\n                              |________/\n\n[n4biS]",
+      "lines": 9,
+      "width": 45,
+      "density": 0.41
+    }
+  ]
+}

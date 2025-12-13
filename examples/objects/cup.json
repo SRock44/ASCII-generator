@@ -1,0 +1,39 @@
+{
+  "subject": "cup",
+  "keywords": [
+    "cup"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "( (\n                _)_)\n     ( (       |====|-+\n      ) )      |\\/\\/| |\n    (----)-)   |====|-+\n     \\__/-'    \\____/\n    `----'\nunknown",
+      "lines": 8,
+      "width": 23,
+      "density": 0.51
+    },
+    {
+      "art": "_..,----,.._\n            .-;'-.,____,.-';\n           (( |            |\n            `))            ;\n             ` \\          /\n        jgs .-' `,.____.,' '-.\n           (     '------'     )\n            `-=..________..--'",
+      "lines": 8,
+      "width": 31,
+      "density": 0.4
+    },
+    {
+      "art": "((((\n            ((((\n             ))))\n          _ .---.\n         ( |`---'|\n          \\|     |\n          : .___, :\n           `-----'\n\n-Karl",
+      "lines": 10,
+      "width": 19,
+      "density": 0.36
+    },
+    {
+      "art": "_  %\n           C/_\\'  _\n                ,_\\Z\n                (| |D\n                 |_|\n\n               coffee          the old fashioned way...",
+      "lines": 7,
+      "width": 55,
+      "density": 0.33
+    },
+    {
+      "art": "__         _ _\n        _\\/Z  ()()  \\( )7\n                     _Y_\n\n         cup   cup   cup\n\n          _ ,\n        C| |)         _\n         |_|   ([]  `(_)D\n\n         pot   mug   tea",
+      "lines": 11,
+      "width": 25,
+      "density": 0.32
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "subject": "computer",
+  "keywords": [
+    "computer",
+    "pc",
+    "laptop",
+    "desktop"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "I'm not sure what to think of this one...\n            o\n            o\n  /  \\ / \\  |\\____\\\n /  ( X ) | | |   |\n<___=\\      | |   |\n    \\======\\ \\|_\"_|\n                (____",
+      "lines": 8,
+      "width": 41,
+      "density": 0.5
+    },
+    {
+      "art": "This is really making me mad!!!\n            o\n            o\n  /  \\ / \\  |\\____\\\n /  ( X ) | | |   |\n<___=\\      | |   |\n    \\======\\ \\|_\"_|\n                (____",
+      "lines": 8,
+      "width": 31,
+      "density": 0.49
+    },
+    {
+      "art": "New Years Eve at the computer...\n            o\n            o\n  /  \\ / \\  |\\____\\\n /  ( X ) | | |   |\n<___=\\      | |   |\n    \\======\\ \\|_\"_|\n                (____",
+      "lines": 8,
+      "width": 32,
+      "density": 0.49
+    },
+    {
+      "art": "That equation can't be right...\n            o\n            o\n  /  \\ / \\  |\\____\\\n /  ( X ) | | |   |\n<___=\\      | |   |\n    \\======\\ \\|_\"_|\n                (____",
+      "lines": 8,
+      "width": 31,
+      "density": 0.49
+    },
+    {
+      "art": "It worked! It worked!  Kiss kiss kiss...\n           o\n/  \\ / ___|\\____\\\n|  \\_____ | |   |\n<________B| |   |\n  \\======\\ \\|_\"_|\n              (____",
+      "lines": 7,
+      "width": 40,
+      "density": 0.64
+    }
+  ]
+}

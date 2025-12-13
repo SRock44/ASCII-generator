@@ -1,0 +1,17 @@
+{
+  "subject": "bicycle",
+  "keywords": [
+    "bicycle",
+    "bike",
+    "cycle"
+  ],
+  "category": "objects",
+  "examples": [
+    {
+      "art": "/'\\\n                 /\n                /                 ,\n             c-'                 /\n            /'-._         ,____,' .-'''-.\n       .-'.// \\  '-;-========,\"-,'       '\n     ,`   /,   \\_//\\       ,/  (  '- *)   )\n    (   ./  )   {,}========'===='- '      ,\n     ,     ,   \\/               ', -muse.\n _____'-.-`_______________________'-..-'____\n \n   s i t   b a c k   r i d e   'n'  r e l a x\n \n     r e c u m b e n t    b i c y c l e s",
+      "lines": 14,
+      "width": 45,
+      "density": 0.43
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "subject": "star",
+  "keywords": [
+    "star",
+    "stars",
+    "starry"
+  ],
+  "category": "nature",
+  "examples": [
+    {
+      "art": ".\n          ---./|\\.---\n          '._/ | \\_.'\n        _.-'_'.|.'_'-._\n         '-._.'|'._.-'\n          .' \\ | / '.\n          ---'\\|/'---\n               ' Starshine",
+      "lines": 8,
+      "width": 26,
+      "density": 0.49
+    },
+    {
+      "art": "/\\\n____/  \\____\n\\          /\n >        <\n/___    ___\\\n    \\  /\n     \\/mh",
+      "lines": 7,
+      "width": 12,
+      "density": 0.45
+    },
+    {
+      "art": ".\n              /|\\               .\n             / | \\            ./|\\,\n          ,-' \\|/ `-.        <-=O=->\n        <'--==<O>==--`>       '\\|/`\n          `-. /|\\ ,-'           '\n             \\ | /\n              \\|/   SSt\n               '",
+      "lines": 9,
+      "width": 36,
+      "density": 0.3
+    },
+    {
+      "art": "/\\\n      __/  \\__\n     `.      .'\n       x    x\n  vwc /__(\\__\\",
+      "lines": 5,
+      "width": 15,
+      "density": 0.43
+    },
+    {
+      "art": "A\n___/_\\___\n ',. ..'\n /.'^'.\\\n/'     '\\\n\n-- Neil Smith",
+      "lines": 7,
+      "width": 13,
+      "density": 0.79
+    }
+  ]
+}

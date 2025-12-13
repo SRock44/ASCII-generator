@@ -1,0 +1,41 @@
+{
+  "subject": "rabbit",
+  "keywords": [
+    "rabbit",
+    "bunny",
+    "hare"
+  ],
+  "category": "animals",
+  "examples": [
+    {
+      "art": ",.\n        \\ \\   ,--.\n         \\.Y_f,,\\ \\\n          Y._.f  `'\n          l._,j\n          f`-'`---.''.\n          |..|  \\  )'\n          ||||--')))   Philip Kaulfuss\n         (_)(_) ((_)",
+      "lines": 9,
+      "width": 38,
+      "density": 0.47
+    },
+    {
+      "art": "/\\ /\\\n  (  V  |\n   \\ | /\n   (r r)\n   ( \" )\n   /   \\\n  (_m m_)\n  /     \\  -Felix Lee-\n _\\  _  /_\n(___/*\\___)",
+      "lines": 10,
+      "width": 22,
+      "density": 0.54
+    },
+    {
+      "art": "\\(,%%*%,_                      -%*%%,)/\n  %%/*(                       /)   /)   )*\\%%\n %% )\\|                      (/   (/    |/( %%\n  _/ #)                    __/') ('\\__  (# \\_\n .) ,/                   _/  /     \\  \\_ \\, (.\n /)#(_,,,,,,,,,,,,,,,,,,,\\,((,,,,,,,)),/,_)#(\\\n b'ger",
+      "lines": 7,
+      "width": 46,
+      "density": 0.47
+    },
+    {
+      "art": ",.   ,.\n           \\.\\ /,/\n            Y Y f\n            |. .|\n           (\"_, l\n            ,- , \\\n           (_)(_) Y,.\n            _j _j |,'  Philip Kaulfuss\n           (_,(__,'",
+      "lines": 9,
+      "width": 38,
+      "density": 0.37
+    },
+    {
+      "art": "(\\\n  \\\\_ _/(\\\n    0 0 _\\)___\n  =(_T_)=     )*\n    /\"/   (  /\n   <_<_/-<__|\n\nunknown",
+      "lines": 8,
+      "width": 16,
+      "density": 0.63
+    }
+  ]
+}

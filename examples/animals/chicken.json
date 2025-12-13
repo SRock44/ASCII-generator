@@ -1,0 +1,42 @@
+{
+  "subject": "chicken",
+  "keywords": [
+    "chicken",
+    "hen",
+    "rooster",
+    "chick"
+  ],
+  "category": "animals",
+  "examples": [
+    {
+      "art": "//\t\t\t       __\n ww_          ___.///\t\t\t      W._`\\._\no__ `._.-'''''    //\t\t\t      |/ \\   `-._._._.-//\n|/  \\   ,     /   //\t\t\t       _  \\ `.__.'  _//\n     \\  ``,,,' _//\t\t\t      `v'\\_`-.  \\--'   _\n      `-.  \\--'   .'`.\t\t\t    .^.`..    \\_/_/   <'\\-_//\n         \\_/_/    `.,'\t\t\t   .' `.  '`   // \\\\   `-.-'\n          \\\\\\\\\t\t\t\t   '`_'`     -'` -'`    ''  AsH\n         ,,','` AsH\t\t\t    ' `",
+      "lines": 9,
+      "width": 54,
+      "density": 0.54
+    },
+    {
+      "art": "xx\n             / .|_\n            /(_)_< --- cack cack!\n           /  (\n  ((____.-'    )\n   \\\\         /\n    \\'-.-.-'`/    -Miss.Kitty-\n  _  \\______/\n (_)   _|_\\_\n ''''''''''''''''",
+      "lines": 10,
+      "width": 33,
+      "density": 0.55
+    },
+    {
+      "art": "COT   cot COOOT!\n     cot ,,    ___\n   COT'.>' \\_/'--.'\n        \"( (( -'/<\n          \\  _- /\n       mrf )/ )/\n         -((-((---",
+      "lines": 7,
+      "width": 19,
+      "density": 0.52
+    },
+    {
+      "art": "__//\ncf  /.__.\\\n    \\ \\/ /\n '__/    \\\n  \\-      )\n   \\_____/\n_____|_|____\n     \" \"",
+      "lines": 8,
+      "width": 12,
+      "density": 0.6
+    },
+    {
+      "art": "||\n   OO\n  (\\/)\n /    \\\n||    ||\n \\    /\n  |/\\|\n /|  |\\\nSteve\nDeGroof",
+      "lines": 10,
+      "width": 8,
+      "density": 0.6
+    }
+  ]
+}
