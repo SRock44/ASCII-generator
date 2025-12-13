@@ -1,0 +1,44 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run Test 1 - Syntax Check
+      run: |
+        python tests/test_syntax.py
+
+    - name: Run Test 2 - ExampleLoader
+      run: |
+        python tests/test_example_loader.py
+
+    - name: Run Test 3 - PromptBuilder
+      run: |
+        python tests/test_prompt_builder.py
+
+    - name: Run Test 4 - Generator Init
+      run: |
+        python tests/test_generator_init.py
+
+    - name: Run Test 5 - Integration
+      run: |
+        python tests/test_integration.py
+
+
