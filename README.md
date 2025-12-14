@@ -13,7 +13,6 @@ A fast, intuitive CLI tool that generates ASCII art, charts, and diagrams using 
 -  **Live Streaming Mode** - Watch your ASCII being drawn in real-time with colors
 -  **Codebase Analysis** - Auto-generate architecture diagrams from local code
 -  **GitHub Integration** - Analyze GitHub repositories and generate diagrams
--  **Caching** - Fast repeated generation with intelligent caching
 -  **Rate Limiting** - Respects API limits automatically
 
 ## Quick Installation (30 Seconds!)
@@ -171,8 +170,6 @@ GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-pro
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=moonshotai/kimi-k2-instruct-0905
-CACHE_ENABLED=true
-CACHE_DIR=.cache
 ```
 
 **Model Options:**
@@ -207,7 +204,6 @@ ASCII-Generator/
 │   ├── codebase.py     # Local codebase parser
 │   └── github.py       # GitHub repository parser
 ├── renderer.py         # Terminal output with Rich
-├── cache.py            # Caching system
 ├── rate_limiter.py     # Rate limiting
 └── requirements.txt    # Dependencies
 ```

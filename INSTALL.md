@@ -133,9 +133,6 @@ ascii codebase /path/to/project [--max-files 50]
 # GitHub Repository Analysis
 ascii github owner/repo [--max-files 50]
 
-# Cache Management
-ascii clear-cache
-
 # Health Check
 ascii check
 ```
@@ -149,7 +146,6 @@ ascii check
 | `--live` | Show live progressive drawing animation |
 | `--provider groq` | Use Groq API (default: auto) |
 | `--provider gemini` | Use Gemini API |
-| `--no-cache` | Disable caching for this request |
 | `--no-colors` | Disable color output (monochrome) |
 | `--explain` | Get explanation (charts/art only) |
 | `--orientation left-to-right` | Horizontal diagram flow |

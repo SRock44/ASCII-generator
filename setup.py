@@ -19,11 +19,13 @@ setup(
     py_modules=[
         'cli',
         'config',
-        'cache',
         'rate_limiter',
         'renderer',
         'validators',
         'colorizer',
+        'examples_loader',
+        'prompt_builder',
+        'session_context',
     ],
     # Include packages (subfolders with __init__.py)
     packages=['ai', 'generators', 'parsers'],

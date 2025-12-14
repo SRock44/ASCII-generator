@@ -120,8 +120,6 @@ def setup_api_keys():
 
         # Other settings
         f.write("# Optional Settings\n")
-        f.write(f"ENABLE_CACHE={existing_env.get('ENABLE_CACHE', 'true')}\n")
-        f.write(f"CACHE_DIR={existing_env.get('CACHE_DIR', '.cache')}\n")
         f.write(f"DEFAULT_TIMEOUT={existing_env.get('DEFAULT_TIMEOUT', '30')}\n")
 
     # Set permissions (read/write for owner only)
