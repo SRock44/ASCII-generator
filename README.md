@@ -68,7 +68,6 @@ ascii diagram "user login flow" --provider groq
 | `--live` | Show live progressive drawing animation |
 | `--provider groq` | Use Groq API (default: auto) |
 | `--provider gemini` | Use Gemini API |
-| `--no-cache` | Disable caching for this request |
 | `--no-colors` | Disable color output (monochrome) |
 | `--explain` | Get explanation (charts/art only) |
 | `--orientation left-to-right` | Horizontal diagram flow |
@@ -153,15 +152,7 @@ ascii github owner/private-repo
 ascii check  # Triggers setup wizard if .env doesn't exist
 ```
 
-**Clear cache:**
-```bash
-ascii clear-cache
-```
-
-**Disable caching:**
-```bash
-ascii art "prompt" --no-cache
-```
+**Note:** The generator uses session-based context (in-memory) to maintain continuity across requests. Context automatically expires after 60 minutes.
 
 **Get explanations:**
 ```bash

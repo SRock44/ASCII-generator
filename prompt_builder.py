@@ -32,7 +32,8 @@ class PromptBuilder:
 
         lines = [
             f"\nRELEVANT EXAMPLES FOR '{subject.upper()}':",
-            "Study these high-quality examples from ascii-art.de:",
+            "Study these high-quality examples from ascii-art.de carefully:",
+            "Pay attention to how they accurately represent the subject with distinctive features.",
             ""
         ]
 
@@ -44,6 +45,11 @@ class PromptBuilder:
                 lines.append("")  # Blank line between examples
 
         lines.append("Use these as reference for style, proportions, and recognizable features.")
+        lines.append("")
+        lines.append(f"CRITICAL: Draw the EXACT subject '{subject}' - make it instantly recognizable.")
+        lines.append("IMPORTANT: Complete the entire drawing. Do not cut off mid-line.")
+        lines.append("Ensure all structural elements are finished (close all brackets, complete all lines).")
+        lines.append("Take your time to create accurate, high-quality artwork.")
         lines.append("")
 
         return "\n".join(lines)

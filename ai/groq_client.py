@@ -83,14 +83,14 @@ class GroqClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
-                    # Adjust max tokens based on mode - logos need more tokens
-                    max_tokens = 2048 if self.mode == "logo" else 1024
+                    # Quality-focused: Allow plenty of tokens for detailed, complete art
+                    max_tokens = 4096 if self.mode == "logo" else 3072  # Generous limits for quality art
                     completion = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
-                        temperature=0.6,
-                        max_completion_tokens=max_tokens,  # Limit output to prevent excessive generation
-                        top_p=1,
+                        temperature=0.4,  # Lower temperature for more accurate, consistent output
+                        max_completion_tokens=max_tokens,
+                        top_p=0.9,  # More focused for better quality
                         stream=False,  # Get full response at once
                         stop=None
                     )
@@ -173,14 +173,14 @@ class GroqClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
-                    # Adjust max tokens based on mode - logos need more tokens
-                    max_tokens = 2048 if self.mode == "logo" else 1024
+                    # Quality-focused: Allow plenty of tokens for detailed, complete art
+                    max_tokens = 4096 if self.mode == "logo" else 3072  # Generous limits for quality art
                     completion = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
-                        temperature=0.6,
+                        temperature=0.4,  # Lower temperature for more accurate, consistent output
                         max_completion_tokens=max_tokens,
-                        top_p=1,
+                        top_p=0.9,  # More focused for better quality
                         stream=True,  # Enable streaming
                         stop=None
                     )

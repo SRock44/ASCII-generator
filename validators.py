@@ -114,6 +114,31 @@ class ASCIIValidator:
             return ValidationResult(False, errors, warnings)
 
         lines = content.split("\n")
+        
+        # Check for incomplete/cut-off art (common issue)
+        if self.mode == "art" and len(lines) >= 3:
+            non_empty_lines = [line for line in lines if line.strip()]
+            if non_empty_lines:
+                # Check if last line looks incomplete (ends with incomplete pattern)
+                last_line = non_empty_lines[-1].strip()
+                # Incomplete patterns: trailing backslashes, incomplete brackets, cut-off lines
+                incomplete_patterns = [
+                    last_line.endswith('\\') and len(last_line) < 5,  # Single trailing backslash
+                    last_line.endswith('/') and len(last_line) < 5,  # Single trailing slash
+                    last_line.endswith('|') and len(last_line) < 5,  # Single trailing pipe
+                    last_line.endswith('_') and len(last_line) < 5,  # Single trailing underscore
+                    last_line.count('(') != last_line.count(')'),  # Unmatched parentheses
+                    last_line.count('[') != last_line.count(']'),  # Unmatched brackets
+                    last_line.count('{') != last_line.count('}'),  # Unmatched braces
+                ]
+                # Also check if last line is much shorter than previous lines (likely cut off)
+                if len(non_empty_lines) >= 2:
+                    prev_line_len = len(non_empty_lines[-2].strip())
+                    if len(last_line) < prev_line_len * 0.3 and prev_line_len > 10:
+                        incomplete_patterns.append(True)
+                
+                if any(incomplete_patterns):
+                    errors.append("Art appears incomplete or cut off - ensure the drawing is complete")
 
         # 1. Check line count
         if len(lines) > self.max_lines:
@@ -188,18 +213,14 @@ class ASCIIValidator:
                 normalized_lines = [''.join(line.split()) for line in non_empty_lines]
                 total_lines = len(normalized_lines)
 
-                # LINE COUNT CHECK (ascii-art.de principle: 4-12 lines ideal)
-                if total_lines > 20:
+                # LINE COUNT CHECK - Very lenient (only error on extreme cases)
+                if total_lines > 75:  # Only error on truly excessive lines
                     errors.append(
-                        f"Too many lines ({total_lines}) - ASCII art should be 4-12 lines. "
-                        "Simplify to just iconic features."
+                        f"Too many lines ({total_lines}) - art is extremely long."
                     )
-                elif total_lines > 15:
-                    warnings.append(
-                        f"Art is long ({total_lines} lines) - consider reducing to 4-12 lines for better impact."
-                    )
+                # No warnings for line count - let the AI create what it wants
 
-                # CONSECUTIVE REPETITION CHECK (max 3 identical consecutive lines)
+                # CONSECUTIVE REPETITION CHECK - Very lenient (only error on extreme repetition)
                 consecutive_count = 1
                 max_consecutive = 1
                 for i in range(1, len(normalized_lines)):
@@ -209,89 +230,63 @@ class ASCIIValidator:
                     else:
                         consecutive_count = 1
 
-                if max_consecutive > 3:
+                # Only error on extreme repetition (10+ consecutive identical lines)
+                if max_consecutive > 10:
                     errors.append(
-                        f"Repetitive loop detected: {max_consecutive} consecutive identical lines. "
-                        "Max 3 consecutive identical lines allowed."
+                        f"Extreme repetition detected: {max_consecutive} consecutive identical lines."
                     )
+                # No warnings for repetition - allow legitimate patterns
 
-                # TOTAL PATTERN REPETITION (any pattern appearing 5+ times)
+                # TOTAL PATTERN REPETITION - Very lenient (only error on extreme cases)
                 pattern_counts = Counter(normalized_lines)
                 max_pattern_count = max(pattern_counts.values()) if pattern_counts else 0
 
-                if max_pattern_count >= 5:
+                # Only error if a pattern appears 15+ times (extreme repetition)
+                if max_pattern_count >= 15:
                     most_common = pattern_counts.most_common(1)[0]
                     errors.append(
-                        f"Pattern '{most_common[0][:15]}' appears {most_common[1]} times - too repetitive."
+                        f"Extreme pattern repetition: '{most_common[0][:15]}' appears {most_common[1]} times."
                     )
+                # No warnings for pattern repetition
 
-                # DENSITY CHECK (ascii-art.de: 40-60% filled)
-                # Include positioning whitespace (leading spaces) in calculation
+                # DENSITY CHECK - Very lenient (only error on extreme density)
                 original_lines = [line for line in lines if line.strip()]
                 all_chars = ''.join(original_lines)
                 spaces = all_chars.count(' ')
                 total_chars = len(all_chars)
                 filled_ratio = (total_chars - spaces) / total_chars if total_chars > 0 else 0
 
-                if filled_ratio > 0.70:
+                # Only error on extreme density (>90% filled - likely broken)
+                if filled_ratio > 0.90:
                     errors.append(
-                        f"Too dense ({int(filled_ratio * 100)}% filled) - should be 40-60%. "
-                        "Use more negative space."
+                        f"Extremely dense ({int(filled_ratio * 100)}% filled) - likely broken output."
                     )
-                elif filled_ratio > 0.60:
-                    warnings.append(
-                        f"Fairly dense ({int(filled_ratio * 100)}% filled) - aim for 40-60%."
-                    )
+                # No warnings for density - allow any reasonable density
 
-                # ICONIC FEATURES CHECK (should have distinct feature characters)
-                feature_chars = set('oO@.^(){}[]<>vV/\\|_-=~')
-                all_content = ''.join(non_empty_lines)
-                feature_count = sum(1 for c in all_content if c in feature_chars)
-                unique_features = len(set(c for c in all_content if c in feature_chars))
+                # Removed all quality warnings - let the AI create what it wants
+                # No checks for iconic features, structural variety, or symmetry
+                # These are artistic choices, not validation errors
 
-                # Should have at least 2 different feature character types
-                if unique_features < 2 and total_lines >= 4:
-                    warnings.append(
-                        "Lacks iconic features - use varied characters like o O ( ) / \\ for eyes, curves, etc."
-                    )
-
-                # STRUCTURAL VARIETY CHECK
-                line_lengths = [len(line) for line in non_empty_lines]
-                unique_lengths = len(set(line_lengths))
-                if unique_lengths < 2 and total_lines > 4:
-                    warnings.append(
-                        "All lines same length - vary structure for better art."
-                    )
-
-                # SYMMETRY CHECK (improved - checks character mirroring)
-                mirror_pairs = {'(': ')', ')': '(', '/': '\\', '\\': '/', '[': ']', ']': '[',
-                               '{': '}', '}': '{', '<': '>', '>': '<'}
-                asymmetry_score = 0
-                for line in non_empty_lines:
-                    content = line.strip()
-                    if len(content) >= 5:  # Only check substantial lines
-                        mid = len(content) // 2
-                        left = content[:mid]
-                        right = content[mid+1:] if len(content) % 2 else content[mid:]
-                        right_reversed = right[::-1]
-
-                        # Check if mirrored characters match
-                        matches = 0
-                        checks = 0
-                        for l_char, r_char in zip(left, right_reversed):
-                            if l_char in mirror_pairs or r_char in mirror_pairs:
-                                checks += 1
-                                expected = mirror_pairs.get(l_char, l_char)
-                                if r_char == expected or l_char == r_char:
-                                    matches += 1
-
-                        if checks > 0 and matches / checks < 0.5:
-                            asymmetry_score += 1
-
-                if asymmetry_score > len(non_empty_lines) * 0.4:
-                    warnings.append(
-                        "Art appears asymmetric - ensure left/right sides mirror each other."
-                    )
+        # 8.5. Check for duplicate content in boxes (diagram mode)
+        if self.mode == "diagram":
+            # Check for duplicate lines within boxes
+            in_box = False
+            box_lines = []
+            for i, line in enumerate(lines):
+                if "┌" in line and "┐" in line:
+                    in_box = True
+                    box_lines = []
+                elif "└" in line and "┘" in line:
+                    if in_box and box_lines:
+                        # Check for duplicates in this box
+                        content_lines = [l.split("│")[1:-1] if "│" in l and l.count("│") >= 2 else [l.strip()] for l in box_lines if "│" in l]
+                        normalized = [''.join(c).strip().lower() for c in content_lines if c]
+                        if len(normalized) != len(set(normalized)):
+                            warnings.append("Box contains duplicate content lines - each line should be unique")
+                    in_box = False
+                    box_lines = []
+                elif in_box and "│" in line:
+                    box_lines.append(line)
 
         # 9. Mode-specific validations
         if self.mode == "diagram":
@@ -478,6 +473,10 @@ class ASCIIValidator:
             lines = self._normalize_box_widths(lines)
             # Complete any incomplete boxes (add missing bottom borders)
             lines = self._complete_incomplete_boxes(lines)
+            # Remove duplicate content in boxes (common issue in architecture diagrams)
+            lines = self._remove_duplicate_box_content(lines)
+            # Fix arrow alignment - align arrows with connection points
+            lines = self._fix_arrow_alignment(lines)
 
         # Truncate lines to max width (but don't cut box borders)
         truncated_lines = []
@@ -493,6 +492,44 @@ class ASCIIValidator:
                 truncated_lines.append(line)
         lines = truncated_lines
 
+        return "\n".join(lines)
+
+    def clean_minimal(self, content: str) -> str:
+        """
+        Minimal cleaning - only removes markdown and trailing spaces.
+        Preserves original structure and alignment.
+
+        Args:
+            content: ASCII content to clean
+
+        Returns:
+            Minimally cleaned content
+        """
+        if not content:
+            return content
+
+        # Remove markdown code blocks
+        content = content.strip()
+        lines = content.split("\n")
+        lines = [line for line in lines if line.strip() != "```" and not line.strip().startswith("```")]
+
+        # Remove language identifiers
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() in ["```", "```\n"]:
+            lines = lines[:-1]
+
+        content = "\n".join(lines).strip()
+        lines = content.split("\n")
+
+        # Only remove trailing whitespace from lines (preserve leading spaces for structure)
+        lines = [line.rstrip() for line in lines]
+
+        # Remove trailing empty lines
+        while lines and not lines[-1].strip():
+            lines.pop()
+
+        # That's it - preserve everything else (alignment, structure, etc.)
         return "\n".join(lines)
 
     def _normalize_box_widths(self, lines: List[str]) -> List[str]:
@@ -797,19 +834,212 @@ class ASCIIValidator:
 
         return padded
 
-    def validate_and_clean(self, content: str, strict: bool = False) -> Tuple[str, ValidationResult]:
+    def _remove_duplicate_box_content(self, lines: List[str]) -> List[str]:
+        """
+        Remove duplicate content lines within boxes.
+        Common issue: AI repeats the same line twice in a box.
+        
+        Args:
+            lines: List of lines
+            
+        Returns:
+            List of lines with duplicate box content removed
+        """
+        if not lines:
+            return lines
+        
+        cleaned = []
+        in_box = False
+        box_content = []
+        box_start_idx = -1
+        
+        for i, line in enumerate(lines):
+            # Check if this line starts a box
+            if "┌" in line and "┐" in line:
+                # Save any previous box content
+                if in_box and box_content:
+                    cleaned.extend(self._deduplicate_box_lines(box_content))
+                    box_content = []
+                
+                in_box = True
+                box_start_idx = i
+                cleaned.append(line)
+            # Check if this line ends a box
+            elif "└" in line and "┘" in line:
+                if in_box:
+                    # Add deduplicated content
+                    if box_content:
+                        cleaned.extend(self._deduplicate_box_lines(box_content))
+                        box_content = []
+                    cleaned.append(line)
+                    in_box = False
+                else:
+                    cleaned.append(line)
+            # Check if this is a box content line (has │ on both sides)
+            elif in_box and "│" in line:
+                # Extract content (between │ characters)
+                parts = line.split("│")
+                if len(parts) >= 3:
+                    content = "│".join(parts[1:-1]).strip()  # Content between first and last │
+                    box_content.append((i, line, content))
+                else:
+                    cleaned.append(line)
+            else:
+                # Not in a box or not a box line
+                if in_box and box_content:
+                    # We left a box without seeing the bottom - flush content
+                    cleaned.extend(self._deduplicate_box_lines(box_content))
+                    box_content = []
+                    in_box = False
+                cleaned.append(line)
+        
+        # Handle any remaining box content
+        if in_box and box_content:
+            cleaned.extend(self._deduplicate_box_lines(box_content))
+        
+        return cleaned
+    
+    def _deduplicate_box_lines(self, box_content: List[tuple]) -> List[str]:
+        """
+        Remove duplicate content lines from box content.
+        
+        Args:
+            box_content: List of (line_idx, full_line, content) tuples
+            
+        Returns:
+            List of deduplicated lines
+        """
+        if not box_content:
+            return []
+        
+        seen_content = set()
+        deduplicated = []
+        
+        for line_idx, full_line, content in box_content:
+            # Normalize content for comparison (strip, lowercase)
+            content_normalized = content.strip().lower()
+            
+            # Skip if we've seen this exact content before
+            if content_normalized and content_normalized in seen_content:
+                continue
+            
+            if content_normalized:
+                seen_content.add(content_normalized)
+            deduplicated.append(full_line)
+        
+        return deduplicated
+
+    def _fix_arrow_alignment(self, lines: List[str]) -> List[str]:
+        """
+        Fix arrow alignment - ensure arrows are aligned with connection points (┬, ├, ┤, ┴).
+        Common issue: arrows appear at start of line instead of aligned with connection points.
+        ONLY modifies lines containing arrows - preserves all other line positions.
+        
+        Args:
+            lines: List of lines
+            
+        Returns:
+            List of lines with arrows properly aligned
+        """
+        if not lines:
+            return lines
+        
+        arrow_chars = ["↓", "→", "↑", "←"]
+        connection_chars = ["┬", "├", "┤", "┴", "┼"]
+        
+        fixed_lines = []
+        
+        for i, line in enumerate(lines):
+            # Check if this line has arrows
+            has_arrow = any(char in line for char in arrow_chars)
+            
+            if has_arrow and i > 0:
+                # Check previous line for connection points
+                prev_line = lines[i - 1]
+                has_connection = any(char in prev_line for char in connection_chars)
+                
+                if has_connection:
+                    # Find all connection point positions in previous line
+                    connection_positions = []
+                    for j, char in enumerate(prev_line):
+                        if char in connection_chars:
+                            connection_positions.append(j)
+                    
+                    if connection_positions:
+                        # Find all arrow positions in current line
+                        arrow_data = []  # (position, arrow_char)
+                        for j, char in enumerate(line):
+                            if char in arrow_chars:
+                                arrow_data.append((j, char))
+                        
+                        if arrow_data:
+                            # Check if this is an arrow-only line (no other meaningful content)
+                            line_without_arrows = line
+                            for arrow_pos, arrow_char in arrow_data:
+                                # Replace arrows with spaces for checking
+                                if arrow_pos < len(line_without_arrows):
+                                    line_without_arrows = line_without_arrows[:arrow_pos] + " " + line_without_arrows[arrow_pos+1:]
+                            
+                            is_arrow_only = not line_without_arrows.strip()
+                            
+                            if is_arrow_only:
+                                # For arrow-only lines, rebuild from scratch with proper spacing
+                                max_conn_pos = max(connection_positions)
+                                fixed_line_chars = [" "] * (max_conn_pos + 1)
+                                
+                                # Place each arrow at its nearest connection point
+                                for arrow_pos, arrow_char in arrow_data:
+                                    nearest_conn = min(connection_positions, key=lambda x: abs(x - arrow_pos))
+                                    fixed_line_chars[nearest_conn] = arrow_char
+                                
+                                fixed_line_str = "".join(fixed_line_chars).rstrip()
+                            else:
+                                # Line has other content - preserve structure, just move arrows
+                                fixed_line = list(line)
+                                
+                                # Remove all arrows from their current positions
+                                for arrow_pos, _ in arrow_data:
+                                    if arrow_pos < len(fixed_line):
+                                        fixed_line[arrow_pos] = " "
+                                
+                                # Align each arrow with the nearest connection point
+                                for arrow_pos, arrow_char in arrow_data:
+                                    nearest_conn = min(connection_positions, key=lambda x: abs(x - arrow_pos))
+                                    
+                                    # Ensure we have enough space
+                                    while len(fixed_line) <= nearest_conn:
+                                        fixed_line.append(" ")
+                                    
+                                    # Place arrow at connection point
+                                    fixed_line[nearest_conn] = arrow_char
+                                
+                                fixed_line_str = "".join(fixed_line).rstrip()
+                            
+                            fixed_lines.append(fixed_line_str)
+                            continue
+            
+            # No arrow or no connection point - keep line as-is
+            fixed_lines.append(line)
+        
+        return fixed_lines
+
+    def validate_and_clean(self, content: str, strict: bool = False, minimal_clean: bool = False) -> Tuple[str, ValidationResult]:
         """
         Validate and clean content in one operation.
 
         Args:
             content: ASCII content
             strict: Whether to use strict validation
+            minimal_clean: If True, only do minimal cleaning (remove markdown, trailing spaces)
 
         Returns:
             Tuple of (cleaned_content, validation_result)
         """
-        # First clean
-        cleaned = self.clean(content)
+        # First clean (minimal for art mode if requested)
+        if minimal_clean and self.mode == "art":
+            cleaned = self.clean_minimal(content)
+        else:
+            cleaned = self.clean(content)
 
         # Then validate the cleaned version
         result = self.validate(cleaned, strict=strict)

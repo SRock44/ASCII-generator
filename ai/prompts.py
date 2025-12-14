@@ -3,10 +3,13 @@ import warnings
 warnings.filterwarnings('ignore', category=SyntaxWarning)
 
 # Build ASCII_ART_PROMPT with examples - QUALITY FOCUSED
-_ASCII_ART_PROMPT_BASE = r"""You are an ASCII artist creating quality art in the ascii-art.de style.
+_ASCII_ART_PROMPT_BASE = r"""You are an expert ASCII artist creating high-quality art in the ascii-art.de style.
+
+QUALITY OVER SPEED: Take your time to create accurate, recognizable, complete artwork. Better to spend a few extra seconds creating excellent art than rushing to produce something generic or incorrect.
 
 UNDERSTAND THE SUBJECT FIRST:
-Before drawing, identify what makes the subject RECOGNIZABLE:
+Before drawing, carefully identify what makes the subject RECOGNIZABLE and UNIQUE:
+- Car = wheels, windshield, doors, headlights, distinct vehicle shape (NOT a house or box)
 - Snake/Python = curved S-body, hood or coils, forked tongue, scales
 - Cat = pointed ears, whiskers, expressive eyes, tail
 - Dog = floppy ears, snout, wagging tail
@@ -18,10 +21,15 @@ ALLOWED CHARACTERS:
 A-Z a-z 0-9 ! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \ ] ^ _ ` { | } ~
 
 RULES:
-1. 6-12 lines ideal (enough detail to be recognizable)
-2. Output ONLY the ASCII art - no explanations
-3. Max 60 chars wide
-4. The subject MUST be instantly identifiable
+1. ACCURACY FIRST: Draw the EXACT subject requested. If asked for "a car", draw a CAR with wheels, not a house or box.
+2. 6-12 lines ideal (enough detail to be recognizable)
+3. Output ONLY the ASCII art - no explanations
+4. Max 60 chars wide
+5. The subject MUST be instantly identifiable - someone should immediately recognize what it is
+6. COMPLETE the entire drawing - do not cut off mid-line or leave incomplete patterns
+7. Ensure all brackets, parentheses, and structural elements are properly closed
+8. Finish the bottom of the drawing completely - no trailing incomplete lines
+9. Take your time - quality and accuracy are more important than speed
 
 QUALITY EXAMPLES FROM ASCII-ART.DE:
 
@@ -78,10 +86,14 @@ Bird:
   ===="====
       /^\
 
-CRITICAL: Draw the ACTUAL subject with recognizable features.
-Generic shapes are NOT acceptable - make it IDENTIFIABLE.
+CRITICAL REQUIREMENTS:
+1. Draw the EXACT subject requested - if the user asks for "a car", draw a CAR (with wheels, windshield, etc.), NOT a house, box, or generic shape
+2. Make it instantly recognizable - include distinctive features that clearly identify the subject
+3. Generic shapes are NOT acceptable - make it IDENTIFIABLE and ACCURATE
+4. Study the examples provided - they show the quality and style expected
+5. Take your time to create accurate, complete artwork
 
-OUTPUT: Pure ASCII art only.
+OUTPUT: Pure ASCII art only. No explanations, no descriptions - just the art.
 """
 
 ASCII_ART_PROMPT = _ASCII_ART_PROMPT_BASE
@@ -456,10 +468,10 @@ Choose colors that make the diagram clear and professional! You can use RGB or H
 # Default prompt (backward compatibility)
 DIAGRAM_PROMPT = get_diagram_prompt("top-to-bottom")
 
-CODEBASE_ANALYSIS_PROMPT = r"""You are a software architect. Analyze the provided codebase structure and create an architecture diagram.
+CODEBASE_ANALYSIS_PROMPT = r"""You are a software architect. Analyze the provided codebase structure and create a clean, legible architecture diagram.
 
 ALLOWED CHARACTERS:
-- Box-drawing: ┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴
+- Box-drawing: ┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼
 - Arrows: → ← ↑ ↓
 - Letters: A-Z, a-z
 - Numbers: 0-9
@@ -486,6 +498,54 @@ CRITICAL RULES (STRICTLY ENFORCED):
 12. ALL lines must start at the same column (no varying indentation)
 13. ALL lines inside a box MUST have EQUAL WIDTH - pad with spaces to align the right edges
 14. Top border (┌─┐), content lines (│ │), and bottom border (└─┘) must all be SAME WIDTH
+
+FORMATTING QUALITY RULES:
+15. NO DUPLICATE CONTENT - Each line in a box should be unique. Do NOT repeat the same text twice.
+16. Box content should be concise - use 1-3 lines maximum per box, with clear labels
+17. Use consistent box widths - similar components should have similar box sizes
+18. Arrows should be on SEPARATE LINES between boxes, never inside boxes
+19. ARROW ALIGNMENT IS CRITICAL - Arrows (↓, →, ↑, ←) MUST be aligned with the connection point on the box border:
+    - If a box bottom has "└───┬───┘", the arrow ↓ must be directly below the ┬ character
+    - Use spaces to align arrows: "└───┬───┘" followed by "     ↓" (arrow aligned with ┬)
+    - NEVER put arrows at the start of the line - always align them with the connection point
+20. Leave blank lines between major sections for better readability
+21. Center text in boxes when possible - pad with spaces on both sides
+22. Use clear, descriptive labels - module/file names should be obvious
+23. Group related components visually - use spacing and alignment to show relationships
+24. Avoid nested boxes - keep the diagram flat and easy to read
+25. Each box should represent ONE component/module - don't combine multiple unrelated items
+
+EXAMPLE OF GOOD FORMATTING:
+┌─────────────────────────────┐
+│      CLI ENTRY POINT        │
+│         cli.py              │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      AI FACTORY             │
+│    ai/factory.py            │
+└──────┬──────────────┬───────┘
+       ↓              ↓
+┌──────────┐   ┌──────────┐
+│  Gemini  │   │  Groq   │
+│  Client  │   │ Client  │
+└──────────┘   └──────────┘
+
+Notice:
+- Each box has unique content (no duplicates)
+- Consistent widths for similar boxes
+- Arrows on separate lines between boxes
+- Arrows are ALIGNED with connection points (┬, ├, ┤, ┴) - NOT at the start of the line
+- Clean, centered text
+- Proper spacing for readability
+
+BAD EXAMPLE (WRONG):
+└──────────────┬───────────────┘
+↓              ← Arrow at start of line - WRONG!
+
+GOOD EXAMPLE (CORRECT):
+└──────────────┬───────────────┘
+               ↓              ← Arrow aligned with ┬ - CORRECT!
 
 OUTPUT FORMAT:
 1. First, output the diagram (pure ASCII, no formatting)

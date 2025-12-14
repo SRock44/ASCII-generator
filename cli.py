@@ -13,7 +13,7 @@ from generators.diagrams import DiagramGenerator
 from parsers.codebase import CodebaseParser
 from parsers.github import GitHubParser
 from renderer import Renderer
-from cache import Cache
+from session_context import SessionContext
 from rate_limiter import RateLimiter
 import config
 
@@ -122,14 +122,13 @@ Explain what the chart/diagram shows, the data relationships, and key insights. 
 
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--no-colors', is_flag=True, help='Disable color output (monochrome)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--explain', is_flag=True, help='Get an explanation of the generated art from Groq')
 @click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
 @click.option('--logo', is_flag=True, help='Enable logo/branding mode for larger, more detailed ASCII art (up to 150 chars width, 100 lines)')
-def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
+def art(prompts, no_colors, provider, explain, no_live, logo):
     """Generate ASCII art from one or more text prompts.
     
     Live progressive rendering is enabled by default. Use --no-live to disable.
@@ -139,7 +138,7 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
     Examples:
       ascii-gen art "a cat wearing sunglasses"
       ascii-gen art "a cat" "a dog" "a bird" --provider groq
-      ascii-gen art "a cat" --provider groq --no-cache --no-colors
+      ascii-gen art "a cat" --provider groq --no-colors
       ascii-gen art "a cat" --explain
       ascii-gen art "a cat" --no-live  # Use traditional rendering
       ascii-gen art "logo for a company called Newton"  # Auto-detects logo mode
@@ -157,9 +156,10 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         # Start with art mode - will be auto-detected or overridden by --logo flag
         ai_client = create_ai_client(provider_name, mode="art")
-        cache = Cache() if not no_cache else None
+        from session_context import SessionContext
+        session_context = SessionContext()  # Session-based context instead of cache
         rate_limiter = RateLimiter()
-        generator = ASCIIArtGenerator(ai_client, cache, rate_limiter)
+        generator = ASCIIArtGenerator(ai_client, session_context, rate_limiter)
 
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
@@ -191,13 +191,13 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
             
             if not no_live:
                 # Use live progressive rendering
-                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache, is_logo=is_logo_mode)
+                stream_generator = generator.generate_stream(prompt, is_logo=is_logo_mode)
                 renderer.render_ascii_progressive(stream_generator, title=title, use_colors=not no_colors)
 
                 # For explanation, we need the full result
                 if explain:
-                    # Re-generate or get from cache (will be cached from streaming)
-                    result = generator.generate(prompt, use_cache=True, is_logo=is_logo_mode)
+                    # Re-generate to get full result for explanation
+                    result = generator.generate(prompt, is_logo=is_logo_mode)
                     if not result.startswith("ERROR_CODE:"):
                         renderer.render_loading("Generating explanation...")
                         explanation = generate_explanation(result, 'art', prompt)
@@ -205,7 +205,7 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
                         renderer.render_explanation(explanation, title="Explanation")
             else:
                 # Traditional non-streaming rendering
-                result = generator.generate(prompt, use_cache=not no_cache, is_logo=is_logo_mode)
+                result = generator.generate(prompt, is_logo=is_logo_mode)
 
                 renderer.clear_line()
                 # Check if result is an error
@@ -233,19 +233,18 @@ def art(prompts, no_cache, no_colors, provider, explain, no_live, logo):
 
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--explain', is_flag=True, help='Get an explanation of the generated chart from Groq')
 @click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
-def chart(prompts, no_cache, provider, explain, no_live):
+def chart(prompts, provider, explain, no_live):
     """Generate a chart from one or more text prompts.
 
     Live progressive rendering is enabled by default. Use --no-live to disable.
 
     Examples:
       ascii-gen chart "bar chart: Q1=100, Q2=150, Q3=120, Q4=200"
-      ascii-gen chart "sales data" "revenue growth" --provider groq --no-cache
+      ascii-gen chart "sales data" "revenue growth" --provider groq
       ascii-gen chart "bar chart: Q1=100, Q2=150" --explain
       ascii-gen chart "bar chart: Q1=100" --no-live  # Use traditional rendering
     """
@@ -258,9 +257,9 @@ def chart(prompts, no_cache, provider, explain, no_live):
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="chart")
-        cache = Cache() if not no_cache else None
+        session_context = SessionContext()
         rate_limiter = RateLimiter()
-        generator = ChartGenerator(ai_client, cache, rate_limiter)
+        generator = ChartGenerator(ai_client, session_context, rate_limiter)
 
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
@@ -276,7 +275,7 @@ def chart(prompts, no_cache, provider, explain, no_live):
                 # Use live progressive rendering
                 title = f"Chart {i}" if len(prompts) > 1 else "Chart"
                 try:
-                    stream_generator = generator.generate_stream(prompt, use_cache=not no_cache)
+                    stream_generator = generator.generate_stream(prompt)
                     renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
                 except KeyboardInterrupt:
                     renderer.clear_line()
@@ -296,7 +295,7 @@ def chart(prompts, no_cache, provider, explain, no_live):
                 # For explanation, we need the full result
                 if explain:
                     # Re-generate or get from cache (will be cached from streaming)
-                    result = generator.generate(prompt, use_cache=True)
+                    result = generator.generate(prompt)
                     if not result.startswith("ERROR_CODE:"):
                         renderer.render_loading("Generating explanation...")
                         explanation = generate_explanation(result, 'chart', prompt)
@@ -304,7 +303,7 @@ def chart(prompts, no_cache, provider, explain, no_live):
                         renderer.render_explanation(explanation, title="Explanation")
             else:
                 # Traditional non-streaming rendering
-                result = generator.generate(prompt, use_cache=not no_cache)
+                result = generator.generate(prompt)
 
                 renderer.clear_line()
                 # Check if result is an error
@@ -332,20 +331,19 @@ def chart(prompts, no_cache, provider, explain, no_live):
 
 @cli.command()
 @click.argument('prompts', nargs=-1, required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False),
               default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False),
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
 @click.option('--no-live', is_flag=True, help='Disable live progressive drawing animation (use traditional rendering)')
-def diagram(prompts, no_cache, orientation, provider, no_live):
+def diagram(prompts, orientation, provider, no_live):
     """Generate a diagram from one or more text prompts.
 
     Live progressive rendering is enabled by default. Use --no-live to disable.
 
     Examples:
       ascii-gen diagram "flowchart: user login -> authenticate -> dashboard"
-      ascii-gen diagram "workflow" "auth flow" --orientation left-to-right --provider groq --no-cache
+      ascii-gen diagram "workflow" "auth flow" --orientation left-to-right --provider groq
       ascii-gen diagram "flowchart" --no-live  # Use traditional rendering
     """
     try:
@@ -358,9 +356,9 @@ def diagram(prompts, no_cache, orientation, provider, no_live):
         # Initialize components
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="diagram")
-        cache = Cache() if not no_cache else None
+        session_context = SessionContext()
         rate_limiter = RateLimiter()
-        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
+        generator = DiagramGenerator(ai_client, session_context, rate_limiter)
 
         # Process each prompt
         for i, prompt in enumerate(prompts, 1):
@@ -375,11 +373,11 @@ def diagram(prompts, no_cache, orientation, provider, no_live):
             if not no_live:
                 # Use live progressive rendering
                 title = f"Diagram {i}" if len(prompts) > 1 else "Diagram"
-                stream_generator = generator.generate_stream(prompt, use_cache=not no_cache, orientation=orientation)
+                stream_generator = generator.generate_stream(prompt, orientation=orientation)
                 renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
             else:
                 # Traditional non-streaming rendering
-                result = generator.generate(prompt, use_cache=not no_cache, orientation=orientation)
+                result = generator.generate(prompt, orientation=orientation)
 
                 renderer.clear_line()
                 # Check if result is an error
@@ -400,13 +398,12 @@ def diagram(prompts, no_cache, orientation, provider, no_live):
 
 @cli.command()
 @click.argument('path', type=click.Path(exists=True), default='.')
-@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--max-files', default=50, help='Maximum number of files to analyze (default: 50)')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
               default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-def codebase(path, no_cache, max_files, orientation, provider):
+def codebase(path, max_files, orientation, provider):
     """Generate an architecture diagram from a local codebase.
     
     Example: ascii-gen codebase /path/to/project
@@ -423,13 +420,26 @@ def codebase(path, no_cache, max_files, orientation, provider):
         renderer.clear_line()
         renderer.render_loading("Generating architecture diagram...")
         
+        # Limit summary size to avoid prompt issues
+        max_summary_length = 2000
+        if len(summary) > max_summary_length:
+            summary = summary[:max_summary_length] + "\n\n... (summary truncated for brevity)"
+            renderer.render_info(f"Note: Codebase summary truncated to {max_summary_length} chars")
+        
         # Generate diagram
         provider_name = None if provider.lower() == 'auto' else provider.lower()
-        ai_client = create_ai_client(provider_name, mode="diagram")
-        cache = Cache() if not no_cache else None
+        try:
+            ai_client = create_ai_client(provider_name, mode="diagram")
+        except Exception as e:
+            renderer.clear_line()
+            renderer.render_error(f"Failed to create AI client: {str(e)}")
+            renderer.render_info("Make sure GEMINI_API_KEY or GROQ_API_KEY is set in .env")
+            sys.exit(1)
+        
+        session_context = SessionContext()
         rate_limiter = RateLimiter()
 
-        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
+        generator = DiagramGenerator(ai_client, session_context, rate_limiter)
         
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
@@ -439,7 +449,19 @@ def codebase(path, no_cache, max_files, orientation, provider):
         
         # Create prompt with codebase summary
         prompt = f"Create an architecture diagram for this codebase:\n\n{summary}"
-        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True, orientation=orientation)
+        
+        # Generate with error handling
+        try:
+            result = generator.generate(prompt, is_codebase=True, orientation=orientation)
+        except KeyboardInterrupt:
+            renderer.clear_line()
+            renderer.render_error("Generation interrupted by user")
+            sys.exit(1)
+        except Exception as e:
+            renderer.clear_line()
+            renderer.render_error(f"Error generating diagram: {str(e)}")
+            renderer.render_info("Try: --max-files 20 --provider groq")
+            sys.exit(1)
         
         renderer.clear_line()
         # Check if result is an error
@@ -456,14 +478,13 @@ def codebase(path, no_cache, max_files, orientation, provider):
 
 @cli.command()
 @click.argument('repo_url', required=True)
-@click.option('--no-cache', is_flag=True, help='Disable caching for this request')
 @click.option('--max-files', default=50, help='Maximum number of files to analyze (default: 50)')
 @click.option('--token', help='GitHub personal access token (or set GITHUB_TOKEN env var)')
 @click.option('--orientation', type=click.Choice(['top-to-bottom', 'left-to-right', 't2b', 'l2r'], case_sensitive=False), 
               default='top-to-bottom', help='Diagram orientation: top-to-bottom or left-to-right (default: top-to-bottom)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq', 'auto'], case_sensitive=False), 
               default='auto', help='AI provider: gemini, groq, or auto (default: auto)')
-def github(repo_url, no_cache, max_files, token, orientation, provider):
+def github(repo_url, max_files, token, orientation, provider):
     """Generate an architecture diagram from a GitHub repository.
     
     Example: ascii-gen github owner/repo-name
@@ -488,10 +509,10 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
         # Generate diagram
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         ai_client = create_ai_client(provider_name, mode="diagram")
-        cache = Cache() if not no_cache else None
+        session_context = SessionContext()
         rate_limiter = RateLimiter()
 
-        generator = DiagramGenerator(ai_client, cache or Cache(), rate_limiter or RateLimiter())
+        generator = DiagramGenerator(ai_client, session_context, rate_limiter)
         
         # Normalize orientation values
         if orientation.lower() in ['t2b', 'top-to-bottom', 'vertical', 'tb']:
@@ -501,7 +522,7 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
         
         # Create prompt with codebase summary
         prompt = f"Create an architecture diagram for this codebase:\n\n{summary}"
-        result = generator.generate(prompt, use_cache=not no_cache, is_codebase=True, orientation=orientation)
+        result = generator.generate(prompt, is_codebase=True, orientation=orientation)
         
         renderer.clear_line()
         # Check if result is an error
@@ -520,10 +541,9 @@ def github(repo_url, no_cache, max_files, token, orientation, provider):
 def clear_cache():
     """Clear the cache of generated content."""
     try:
-        cache = Cache()
-        cache.clear()
+        # Session context is in-memory only and auto-expires
         renderer = Renderer()
-        renderer.render_success("Cache cleared successfully")
+        renderer.render_info("Session context is in-memory only and auto-expires after 60 minutes.")
     except Exception as e:
         Renderer().render_error(str(e))
         sys.exit(1)

@@ -84,13 +84,13 @@ class GeminiClient(AIClient):
             # Use timeout to prevent hanging
             try:
                 with timeout_context(self.timeout):
-                    # Adjust max tokens based on mode - logos need more tokens
-                    max_tokens = 8192 if self.mode == "logo" else 4096
+                    # Quality-focused: Allow plenty of tokens for detailed, complete art
+                    max_tokens = 8192 if self.mode == "logo" else 6144  # Generous limits for quality art
                     response = self.model.generate_content(
                         full_prompt,
                         generation_config={
-                            "temperature": 0.7,
-                            "max_output_tokens": max_tokens,  # Increased for logos and longer diagrams
+                            "temperature": 0.5,  # Lower temperature for more accurate, consistent output
+                            "max_output_tokens": max_tokens,
                         }
                     )
             except TimeoutError as e:

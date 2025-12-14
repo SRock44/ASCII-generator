@@ -160,6 +160,7 @@ class CodebaseParser:
     def _format_summary(self, structure: Dict[str, List[str]], imports: Dict[str, Set[str]]) -> str:
         """
         Format codebase summary for AI analysis.
+        Keeps summary concise to avoid prompt size issues.
         
         Args:
             structure: File structure
@@ -170,23 +171,38 @@ class CodebaseParser:
         """
         summary_parts = ["Codebase Structure:\n"]
         
-        # Add directory structure
+        # Add directory structure (limit to keep prompt size manageable)
+        dir_count = 0
         for dir_path, files in sorted(structure.items()):
+            if dir_count >= 15:  # Limit directories
+                summary_parts.append(f"\n... and {len(structure) - dir_count} more directories")
+                break
             summary_parts.append(f"\nDirectory: {dir_path or '.'}")
-            for file in files[:5]:  # Limit files per directory
+            for file in files[:3]:  # Limit files per directory (reduced from 5)
                 summary_parts.append(f"  - {file}")
-            if len(files) > 5:
-                summary_parts.append(f"  ... and {len(files) - 5} more files")
+            if len(files) > 3:
+                summary_parts.append(f"  ... and {len(files) - 3} more files")
+            dir_count += 1
         
-        # Add import relationships
+        # Add import relationships (limit to keep prompt size manageable)
         if imports:
             summary_parts.append("\n\nKey Dependencies:")
-            for file, file_imports in list(imports.items())[:20]:
+            import_count = 0
+            for file, file_imports in list(imports.items())[:15]:  # Limit to 15 files
+                if import_count >= 15:
+                    break
                 if file_imports:
                     summary_parts.append(f"\n{file}:")
-                    summary_parts.append(f"  imports: {', '.join(sorted(list(file_imports)[:5]))}")
+                    summary_parts.append(f"  imports: {', '.join(sorted(list(file_imports)[:3]))}")  # Limit imports per file
+                    import_count += 1
         
-        return "\n".join(summary_parts)
+        summary = "\n".join(summary_parts)
+        
+        # Hard limit: truncate if too long (max ~2000 chars to leave room for prompt)
+        if len(summary) > 2000:
+            summary = summary[:2000] + "\n\n... (truncated for brevity)"
+        
+        return summary
 
 
 
