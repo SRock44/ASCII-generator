@@ -151,6 +151,11 @@ ascii github owner/private-repo
 ascii check  # Triggers setup wizard if .env doesn't exist
 ```
 
+**List available models:**
+```bash
+ascii models  # List all available AI models for Gemini and Groq
+```
+
 **Note:** The generator uses session-based context (in-memory) to maintain continuity across requests. Context automatically expires after 60 minutes.
 
 **Get explanations:**

@@ -11,15 +11,27 @@ echo ""
 
 # Get project directory
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-VENV_DIR="$PROJECT_DIR/.venv"
+
+# Support both common venv directory names: .venv (recommended) and venv (legacy/alternative)
+if [ -d "$PROJECT_DIR/.venv" ]; then
+    VENV_DIR="$PROJECT_DIR/.venv"
+elif [ -d "$PROJECT_DIR/venv" ]; then
+    VENV_DIR="$PROJECT_DIR/venv"
+else
+    VENV_DIR="$PROJECT_DIR/.venv"
+fi
 
 echo "Project directory: $PROJECT_DIR"
 echo ""
 
 # Step 1: Check for virtual environment
 if [ ! -d "$VENV_DIR" ]; then
-    echo "Error: Virtual environment not found at $VENV_DIR"
-    echo "Please create it first:"
+    echo "Error: Virtual environment not found."
+    echo "Looked for:"
+    echo "  - $PROJECT_DIR/.venv"
+    echo "  - $PROJECT_DIR/venv"
+    echo ""
+    echo "Please create one first:"
     echo "  python3 -m venv .venv"
     exit 1
 fi
@@ -53,7 +65,7 @@ echo ""
 
 # Step 4: Check if alias/function already exists
 # Use venv's installed script directly - no activation needed, no prompt change
-FUNCTION_LINE="ascii() { $PROJECT_DIR/.venv/bin/ascii \"\$@\"; }"
+FUNCTION_LINE="ascii() { $VENV_DIR/bin/ascii \"\$@\"; }"
 
 if grep -q "ascii()" "$RC_FILE" 2>/dev/null || grep -q "alias ascii=" "$RC_FILE" 2>/dev/null; then
     echo "Found existing 'ascii' command in $RC_FILE"

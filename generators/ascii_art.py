@@ -158,6 +158,44 @@ class ASCIIArtGenerator:
         
         # Don't retry based on warnings - they're just suggestions
         return False
+
+    def _is_ladder_failure(self, validation: Optional[ValidationResult]) -> bool:
+        """Detect the degenerate 'ladder/template' failure mode for art."""
+        # ValidationResult defines __bool__ as is_valid; we must not treat invalid results as "no object".
+        if validation is None:
+            return False
+        ladder_keywords = [
+            "degenerate template/ladder",
+            "extreme pattern repetition",
+            "extreme repetition detected",
+            "consecutive identical lines",
+        ]
+        combined = " ".join((validation.errors or []) + (validation.warnings or [])).lower()
+        return any(k in combined for k in ladder_keywords)
+
+    def _build_hard_reprompt(self, original_prompt: str) -> str:
+        """
+        Build a hard reset prompt specifically to avoid ladder/template outputs.
+        This intentionally overwrites prior behavior with strict, concrete constraints.
+        """
+        return "\n".join([
+            f"HARD RESET: Generate ASCII art for: {original_prompt}",
+            "",
+            "ABSOLUTE RULES:",
+            "- Output ONLY the ASCII drawing (no prose, no labels).",
+            "- DO NOT produce a repeated 'ladder/template' made of similar lines.",
+            "- No more than 2 similar consecutive lines; every line must add a new shape/detail.",
+            "- Use 6–14 lines total. Max width 60.",
+            "- Make it clearly recognizable with 3+ iconic features (e.g., head, eyes, wings, tail).",
+            "",
+            "NEGATIVE EXAMPLE (DO NOT DO THIS): repeated scaffolding like '/ /| |\\ \\' many times.",
+            "",
+            "POSITIVE SHAPE GUIDANCE:",
+            "- Vary line lengths to form a silhouette.",
+            "- Use whitespace and curves; avoid vertical repetition.",
+            "",
+            "NOW OUTPUT THE DRAWING:",
+        ])
     
     def generate(self, prompt: str, is_logo: Optional[bool] = None) -> str:
         """
@@ -179,7 +217,7 @@ class ASCIIArtGenerator:
 
         # Build enhanced prompt with relevant examples (lazy-loaded)
         # Add session context if available
-        base_prompt = self.prompt_builder.build(prompt, is_logo=is_logo, max_examples=2)
+        base_prompt = self.prompt_builder.build(prompt, is_logo=is_logo, max_examples=3)
         
         # Add session context for continuity
         if self.session_context:
@@ -200,6 +238,7 @@ class ASCIIArtGenerator:
         last_result = None
         last_validation = None
         cleaned_result = ""  # Initialize to avoid unbound variable
+        validation = None  # For type checkers; last_validation is the authoritative final value.
         
         for attempt in range(self.max_retries + 1):  # +1 for initial attempt
             # Wait for rate limit
@@ -211,7 +250,7 @@ class ASCIIArtGenerator:
                 result = self.ai_client.generate(current_prompt, system_prompt)
             else:
                 # Retry: use feedback prompt
-                if last_validation and last_result:
+                if last_validation is not None and last_result:
                     feedback_prompt = self._build_feedback_prompt(prompt, last_validation, last_result)
                     # Combine feedback with original system prompt
                     enhanced_system_prompt = f"{system_prompt}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
@@ -244,7 +283,7 @@ class ASCIIArtGenerator:
         
         # Record in session context (even if not perfect)
         if self.session_context:
-            success = validation.is_valid if validation else False
+            success = last_validation.is_valid if last_validation is not None else False
             self.session_context.add_interaction(prompt, final_result, generator_type, success=success)
         
         return final_result
@@ -270,7 +309,7 @@ class ASCIIArtGenerator:
 
         # Build enhanced prompt with relevant examples (lazy-loaded)
         # Add session context if available
-        base_prompt = self.prompt_builder.build(prompt, is_logo=is_logo, max_examples=2)
+        base_prompt = self.prompt_builder.build(prompt, is_logo=is_logo, max_examples=3)
         
         # Add session context for continuity
         if self.session_context:
@@ -300,6 +339,19 @@ class ASCIIArtGenerator:
 
             # Validate and clean the final result (minimal cleaning for art mode)
             cleaned_result, validation = self.validator.validate_and_clean(accumulated, strict=False, minimal_clean=True)
+
+            # If cleaning materially changes output (e.g., fixes indentation or strips fences),
+            # re-render the cleaned result so the user sees the best final art.
+            # This is cheap (local) and improves UX for streaming output.
+            try:
+                raw_norm = accumulated.replace("\r\n", "\n").replace("\r", "\n").rstrip()
+                cleaned_norm = cleaned_result.replace("\r\n", "\n").replace("\r", "\n").rstrip()
+                if cleaned_norm and cleaned_norm != raw_norm:
+                    yield "\n[FINAL]"
+                    yield cleaned_norm + "\n"
+            except Exception:
+                # Never let final re-render fail the stream.
+                pass
             
             # Check if validation failed or quality issues detected
             if not validation.is_valid or self._has_quality_issues(validation):
@@ -313,16 +365,34 @@ class ASCIIArtGenerator:
                 # Retry with feedback - use streaming for live rendering
                 last_result = cleaned_result
                 last_validation = validation
+                ladder_failures = 1 if self._is_ladder_failure(validation) else 0
+                hard_reprompt_used = False
                 
                 for attempt in range(self.max_retries + 1):
-                    # Build feedback prompt
-                    if last_validation and last_result:
-                        feedback_prompt = self._build_feedback_prompt(prompt, last_validation, last_result)
-                        enhanced_system_prompt = f"{system_prompt}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
-                        retry_prompt = prompt
-                    else:
+                    # Clear previous attempt output before starting a new attempt
+                    # (prevents stacking multiple failed ladders on screen).
+                    if attempt > 0:
+                        yield "\n[RETRY]"
+
+                    # Escalate if we hit the ladder failure again: hard re-prompt ONCE.
+                    ladder_again = self._is_ladder_failure(last_validation)
+                    if ladder_again:
+                        ladder_failures += 1
+
+                    if ladder_failures >= 2 and not hard_reprompt_used:
+                        # Complete reset: ignore prior output and demand non-ladder drawing.
+                        hard_reprompt_used = True
                         enhanced_system_prompt = system_prompt
-                        retry_prompt = prompt
+                        retry_prompt = self._build_hard_reprompt(prompt)
+                    else:
+                        # Standard feedback prompt
+                        if last_validation is not None and last_result:
+                            feedback_prompt = self._build_feedback_prompt(prompt, last_validation, last_result)
+                            enhanced_system_prompt = f"{system_prompt}\n\n--- REGENERATION REQUEST WITH FEEDBACK ---\n{feedback_prompt}"
+                            retry_prompt = prompt
+                        else:
+                            enhanced_system_prompt = system_prompt
+                            retry_prompt = prompt
                     
                     # Wait for rate limit
                     self.rate_limiter.wait_if_needed()
@@ -346,6 +416,11 @@ class ASCIIArtGenerator:
                     # Store for next retry attempt
                     last_result = retry_cleaned
                     last_validation = retry_validation
+
+                    # If we already escalated and still got ladder output, stop cleanly.
+                    if hard_reprompt_used and self._is_ladder_failure(retry_validation):
+                        yield "ERROR_CODE: VALIDATION_FAILED\nERROR_MESSAGE: Model produced repeated ladder/template output multiple times. Try a more specific prompt (e.g., 'dragon head with wings, 10 lines')."
+                        return
                     
                     # If this was the last attempt, we're done
                     if attempt >= self.max_retries:
@@ -353,6 +428,10 @@ class ASCIIArtGenerator:
                         if self.session_context:
                             success = retry_validation.is_valid if retry_validation else False
                             self.session_context.add_interaction(prompt, retry_cleaned, generator_type, success=success)
+                        # Avoid leaving the user with an obviously broken ladder output.
+                        if self._is_ladder_failure(retry_validation):
+                            yield "ERROR_CODE: VALIDATION_FAILED\nERROR_MESSAGE: Could not generate a non-ladder drawing after multiple retries. Please try again with a more specific prompt."
+                            return
                         return
             else:
                 # Validation passed - record in session context

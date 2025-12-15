@@ -34,84 +34,77 @@ class Renderer:
             title: Optional title for the content
             use_colors: Whether to apply color highlighting to ASCII art
         """
-        # Clean up content
-        content = content.strip()
+        # Clean up content WITHOUT destroying indentation.
+        # Leading spaces are meaningful for ASCII art alignment.
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
         
         # Remove any markdown code blocks if present
-        if content.startswith("```"):
+        if "```" in content:
             lines = content.split("\n")
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines[-1].strip() == "```":
-                lines = lines[:-1]
-            content = "\n".join(lines).strip()
+            # Drop any fence lines like ``` or ```text (often LLM artifacts).
+            lines = [line for line in lines if not line.lstrip().startswith("```")]
+            # Drop leading/trailing blank lines only.
+            while lines and not lines[0].strip():
+                lines.pop(0)
+            while lines and not lines[-1].strip():
+                lines.pop()
+            content = "\n".join(lines)
         
-        # Fix alignment issues - detect and fix inconsistent leading whitespace
-        lines = content.split("\n")
-        if lines:
-            # Calculate leading spaces for each non-empty line
-            leading_spaces = []
-            line_info = []
-            for i, line in enumerate(lines):
-                if line.strip():
-                    leading = len(line) - len(line.lstrip())
-                    leading_spaces.append(leading)
-                    line_info.append((i, leading, line))
-            
-            if leading_spaces and len(set(leading_spaces)) > 1:  # Multiple different indentations
-                from collections import Counter
-                leading_counts = Counter(leading_spaces)
-                min_leading = min(leading_spaces)
-                max_leading = max(leading_spaces)
+        # Fix alignment issues (ONLY for diagrams/charts).
+        # For "art" (and logo-like art) we should not rewrite indentation: it can degrade quality.
+        if self.mode in ("diagram", "chart"):
+            lines = content.split("\n")
+            if lines:
+                # Calculate leading spaces for each non-empty line
+                leading_spaces = []
+                for line in lines:
+                    if line.strip():
+                        leading_spaces.append(len(line) - len(line.lstrip()))
                 
-                # Filter out lines with 0 or very few spaces (likely misaligned parts)
-                # Focus on lines with substantial indentation (likely the main body)
-                substantial_indents = [ls for ls in leading_spaces if ls >= 3]
-                
-                if substantial_indents:
-                    # Use the most common substantial indentation as the base
-                    substantial_counts = Counter(substantial_indents)
-                    if substantial_counts:
+                if leading_spaces and len(set(leading_spaces)) > 1:  # Multiple different indentations
+                    from collections import Counter
+                    min_leading = min(leading_spaces)
+                    max_leading = max(leading_spaces)
+                    
+                    # Filter out lines with 0 or very few spaces (likely misaligned parts)
+                    # Focus on lines with substantial indentation (likely the main body)
+                    substantial_indents = [ls for ls in leading_spaces if ls >= 3]
+                    
+                    if substantial_indents:
+                        substantial_counts = Counter(substantial_indents)
                         base_indent = substantial_counts.most_common(1)[0][0]
                         
-                        # Align all lines to the base indent for consistent alignment
-                        # Only skip if variation is very small (1-2 spaces difference)
+                        # Only normalize if indentation varies enough to indicate a real misalignment
                         if max_leading - min_leading > 1:
                             normalized_lines = []
-                            for i, line in enumerate(lines):
+                            for line in lines:
                                 if line.strip():
                                     current_leading = len(line) - len(line.lstrip())
-                                    
-                                    # Align all lines to base_indent for consistency
-                                    # Only preserve if it's exactly at base (within 1 space)
                                     if abs(current_leading - base_indent) <= 1:
-                                        # Already aligned or very close, keep as is
                                         normalized_lines.append(line)
                                     else:
-                                        # Align to base
                                         offset = base_indent - current_leading
                                         normalized_lines.append(" " * max(0, offset) + line.lstrip())
                                 else:
                                     normalized_lines.append("")
                             content = "\n".join(normalized_lines)
-                else:
-                    # No substantial indents found, use median
-                    sorted_leading = sorted(leading_spaces)
-                    median_idx = len(sorted_leading) // 2
-                    median_leading = sorted_leading[median_idx]
-                    
-                    normalized_lines = []
-                    for line in lines:
-                        if line.strip():
-                            current_leading = len(line) - len(line.lstrip())
-                            offset = median_leading - current_leading
-                            if abs(offset) > 0:
-                                normalized_lines.append(" " * max(0, offset) + line.lstrip())
+                    else:
+                        # No substantial indents found, use median
+                        sorted_leading = sorted(leading_spaces)
+                        median_leading = sorted_leading[len(sorted_leading) // 2]
+                        
+                        normalized_lines = []
+                        for line in lines:
+                            if line.strip():
+                                current_leading = len(line) - len(line.lstrip())
+                                offset = median_leading - current_leading
+                                if offset != 0:
+                                    normalized_lines.append(" " * max(0, offset) + line.lstrip())
+                                else:
+                                    normalized_lines.append(line)
                             else:
-                                normalized_lines.append(line)
-                        else:
-                            normalized_lines.append("")
-                    content = "\n".join(normalized_lines)
+                                normalized_lines.append("")
+                        content = "\n".join(normalized_lines)
         
         if title:
             self.console.print(f"\n[bold cyan]{title}[/bold cyan]\n")
@@ -124,7 +117,7 @@ class Renderer:
         else:
             # Strip color hints if present (even when colors are disabled)
             if "###COLORS###" in content:
-                content = content.split("###COLORS###")[0].strip()
+                content = content.split("###COLORS###")[0].rstrip()
             # Use monospace font for ASCII art
             self.console.print(content, style="white")
         self.console.print()  # Extra newline
@@ -238,6 +231,16 @@ class Renderer:
             message: Info message
         """
         self.console.print(f"[bold blue]Info:[/bold blue] {message}")
+
+    def render_plain(self, message: str, style: Optional[str] = None):
+        """
+        Render plain text without an 'Info:'/'Success:' prefix.
+        Useful for headings and multi-line output blocks.
+        """
+        if style:
+            self.console.print(message, style=style)
+        else:
+            self.console.print(message)
     
     def render_success(self, message: str):
         """
@@ -307,6 +310,12 @@ class Renderer:
                             chunk = chunk.replace("[RETRY]", "")
                             # Clear the display
                             live.update(Text())
+                        # Check for final-clean marker - replace with cleaned final output
+                        if "[FINAL]" in chunk:
+                            # Clear accumulated content and start fresh with cleaned version
+                            accumulated_content = ""
+                            chunk = chunk.replace("[FINAL]", "")
+                            live.update(Text())
                         
                         # Check for errors
                         if chunk and chunk.startswith("ERROR_CODE:"):
@@ -343,7 +352,7 @@ class Renderer:
                             
                             # Strip color hints marker if it appears in the line itself
                             if "###COLORS###" in line:
-                                line = line.split("###COLORS###")[0].strip()
+                                line = line.split("###COLORS###")[0].rstrip()
                                 if not line:
                                     continue  # Skip empty lines after stripping
                             
@@ -380,7 +389,7 @@ class Renderer:
                         # Strip color hints for final display
                         final_content = accumulated_content
                         if "###COLORS###" in final_content:
-                            final_content = final_content.split("###COLORS###")[0].strip()
+                            final_content = final_content.split("###COLORS###")[0].rstrip()
                         
                         if final_content.strip():
                             final_lines = final_content.split("\n")
@@ -410,6 +419,16 @@ class Renderer:
 
         # Final render with cleanup
         self.console.print()  # Extra newline
+
+        # Return the final content for callers that need it (e.g., explanations).
+        # Strip color hints section if present.
+        if accumulated_content and not accumulated_content.startswith("ERROR_CODE:"):
+            final_content = accumulated_content
+            if "###COLORS###" in final_content:
+                final_content = final_content.split("###COLORS###")[0].rstrip()
+            # Do not strip leading spaces; only drop trailing newlines/spaces.
+            return final_content.rstrip()
+        return None
 
     def _apply_ascii_colors_to_line(self, line: str, is_incomplete: bool = False) -> Text:
         """

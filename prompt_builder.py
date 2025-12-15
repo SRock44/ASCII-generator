@@ -31,9 +31,15 @@ class PromptBuilder:
             return ""
 
         lines = [
-            f"\nRELEVANT EXAMPLES FOR '{subject.upper()}':",
-            "Study these high-quality examples from ascii-art.de carefully:",
-            "Pay attention to how they accurately represent the subject with distinctive features.",
+            f"\n{'='*60}",
+            f"REQUIRED QUALITY EXAMPLES FOR '{subject.upper()}' (from ascii-art.de):",
+            f"{'='*60}",
+            "Study these examples CAREFULLY - your output MUST match this quality level.",
+            "Notice the key techniques:",
+            "- Character variety: Uses (), {}, [], /, \\, |, -, _, etc. for different textures",
+            "- Recognizable features: Each example is INSTANTLY identifiable",
+            "- Artistic detail: Curves, shading, depth using character combinations",
+            "- Proper structure: Complete, balanced, well-proportioned",
             ""
         ]
 
@@ -44,12 +50,18 @@ class PromptBuilder:
                 lines.append(art)
                 lines.append("")  # Blank line between examples
 
-        lines.append("Use these as reference for style, proportions, and recognizable features.")
+        lines.append("YOUR TASK:")
+        lines.append(f"Create an ORIGINAL ASCII art of '{subject}' using the SAME TECHNIQUES as above.")
         lines.append("")
-        lines.append(f"CRITICAL: Draw the EXACT subject '{subject}' - make it instantly recognizable.")
-        lines.append("IMPORTANT: Complete the entire drawing. Do not cut off mid-line.")
-        lines.append("Ensure all structural elements are finished (close all brackets, complete all lines).")
-        lines.append("Take your time to create accurate, high-quality artwork.")
+        lines.append("MANDATORY REQUIREMENTS:")
+        lines.append("1. QUALITY MATCH: Your art MUST be as detailed and recognizable as the examples")
+        lines.append("2. CHARACTER VARIETY: Use diverse characters like the examples - (), {}, [], /, \\, |, -, _, `, ', etc.")
+        lines.append("3. RECOGNIZABLE: Must be INSTANTLY identifiable as a " + subject)
+        lines.append("4. COMPLETE: Finish the ENTIRE drawing - no cut-off lines or incomplete patterns")
+        lines.append("5. ORIGINAL: Do NOT copy examples verbatim - create something NEW in the same style")
+        lines.append("6. ARTISTIC: Add curves, shading, depth - make it beautiful like the examples")
+        lines.append("")
+        lines.append("STUDY THE EXAMPLES ABOVE - Match their quality, technique, and artistic style!")
         lines.append("")
 
         return "\n".join(lines)
@@ -90,7 +102,7 @@ class PromptBuilder:
         enhanced_prompt = base_prompt
 
         # Insert examples after the base rules but before final instructions
-        # For ASCII_ART_PROMPT, insert before "CRITICAL: Draw the ACTUAL subject..."
+        # For ASCII_ART_PROMPT, insert before "CRITICAL REQUIREMENTS:"
         # For LOGO_PROMPT, insert before "OUTPUT FORMAT:"
         if is_logo:
             # Insert before "OUTPUT FORMAT:" section
@@ -100,10 +112,10 @@ class PromptBuilder:
             else:
                 enhanced_prompt += examples_section
         else:
-            # Insert before "CRITICAL: Draw the ACTUAL subject..."
-            if "CRITICAL: Draw the ACTUAL subject" in enhanced_prompt:
-                parts = enhanced_prompt.split("CRITICAL: Draw the ACTUAL subject", 1)
-                enhanced_prompt = parts[0] + examples_section + "CRITICAL: Draw the ACTUAL subject" + parts[1]
+            # Insert before "CRITICAL REQUIREMENTS:" section
+            if "CRITICAL REQUIREMENTS:" in enhanced_prompt:
+                parts = enhanced_prompt.split("CRITICAL REQUIREMENTS:", 1)
+                enhanced_prompt = parts[0] + examples_section + "\nCRITICAL REQUIREMENTS:" + parts[1]
             else:
                 enhanced_prompt += examples_section
 

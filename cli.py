@@ -156,7 +156,6 @@ def art(prompts, no_colors, provider, explain, no_live, logo):
         provider_name = None if provider.lower() == 'auto' else provider.lower()
         # Start with art mode - will be auto-detected or overridden by --logo flag
         ai_client = create_ai_client(provider_name, mode="art")
-        from session_context import SessionContext
         session_context = SessionContext()  # Session-based context instead of cache
         rate_limiter = RateLimiter()
         generator = ASCIIArtGenerator(ai_client, session_context, rate_limiter)
@@ -192,15 +191,14 @@ def art(prompts, no_colors, provider, explain, no_live, logo):
             if not no_live:
                 # Use live progressive rendering
                 stream_generator = generator.generate_stream(prompt, is_logo=is_logo_mode)
-                renderer.render_ascii_progressive(stream_generator, title=title, use_colors=not no_colors)
+                final_content = renderer.render_ascii_progressive(stream_generator, title=title, use_colors=not no_colors)
 
                 # For explanation, we need the full result
                 if explain:
-                    # Re-generate to get full result for explanation
-                    result = generator.generate(prompt, is_logo=is_logo_mode)
-                    if not result.startswith("ERROR_CODE:"):
+                    # Use streamed final content to avoid an extra paid API call
+                    if final_content and not final_content.startswith("ERROR_CODE:"):
                         renderer.render_loading("Generating explanation...")
-                        explanation = generate_explanation(result, 'art', prompt)
+                        explanation = generate_explanation(final_content, 'art', prompt)
                         renderer.clear_line()
                         renderer.render_explanation(explanation, title="Explanation")
             else:
@@ -276,7 +274,7 @@ def chart(prompts, provider, explain, no_live):
                 title = f"Chart {i}" if len(prompts) > 1 else "Chart"
                 try:
                     stream_generator = generator.generate_stream(prompt)
-                    renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
+                    final_content = renderer.render_ascii_progressive(stream_generator, title=title, use_colors=True)
                 except KeyboardInterrupt:
                     renderer.clear_line()
                     renderer.render_error("Generation interrupted by user")
@@ -294,11 +292,10 @@ def chart(prompts, provider, explain, no_live):
 
                 # For explanation, we need the full result
                 if explain:
-                    # Re-generate or get from cache (will be cached from streaming)
-                    result = generator.generate(prompt)
-                    if not result.startswith("ERROR_CODE:"):
+                    # Use streamed final content to avoid an extra paid API call
+                    if final_content and not final_content.startswith("ERROR_CODE:"):
                         renderer.render_loading("Generating explanation...")
-                        explanation = generate_explanation(result, 'chart', prompt)
+                        explanation = generate_explanation(final_content, 'chart', prompt)
                         renderer.clear_line()
                         renderer.render_explanation(explanation, title="Explanation")
             else:
@@ -575,6 +572,76 @@ def check(provider):
         renderer = Renderer()
         renderer.render_error(f"Configuration error: {str(e)}")
         renderer.render_info("Make sure GEMINI_API_KEY or GROQ_API_KEY is set in your .env file")
+        sys.exit(1)
+
+
+@cli.command()
+def models():
+    """List all available AI models for Gemini and Groq providers."""
+    try:
+        renderer = Renderer()
+        
+        # Gemini Models
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("Google Gemini Models", style="bold blue")
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("")
+        
+        gemini_models = [
+            ("gemini-2.5-pro", "Recommended: Good balance of capability and availability (default)"),
+            ("gemini-3-pro-preview", "Latest preview model (requires paid tier, may have availability issues)"),
+            ("gemini-2.5-flash", "Fast, efficient model"),
+            ("gemini-1.5-flash", "Free tier compatible"),
+            ("gemini-1.5-pro", "More capable model"),
+        ]
+        
+        current_gemini = config.GEMINI_MODEL
+        for model, description in gemini_models:
+            marker = " (current)" if model == current_gemini else ""
+            renderer.render_plain(f"- {model}{marker}")
+            renderer.render_plain(f"  {description}", style="dim")
+            renderer.render_plain("")
+        
+        # Groq Models
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("Groq Models", style="bold blue")
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("")
+        
+        groq_models = [
+            ("moonshotai/kimi-k2-instruct-0905", "Kimi K2 model - Fast and efficient (default)"),
+        ]
+        
+        current_groq = config.GROQ_MODEL
+        for model, description in groq_models:
+            marker = " (current)" if model == current_groq else ""
+            renderer.render_plain(f"- {model}{marker}")
+            renderer.render_plain(f"  {description}", style="dim")
+            renderer.render_plain("")
+        
+        # Configuration info
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("Configuration", style="bold blue")
+        renderer.render_plain("=" * 70, style="bold blue")
+        renderer.render_plain("")
+        renderer.render_plain("To change the model, set the following in your .env file:", style="dim")
+        renderer.render_plain("  GEMINI_MODEL=gemini-2.5-pro")
+        renderer.render_plain("  GROQ_MODEL=moonshotai/kimi-k2-instruct-0905")
+        renderer.render_plain("")
+        renderer.render_plain("Current configuration:", style="dim")
+        if config.GEMINI_API_KEY:
+            renderer.render_success(f"  Gemini: {current_gemini} (API key configured)")
+        else:
+            renderer.render_plain(f"  Gemini: {current_gemini} (API key not set)")
+        
+        if config.GROQ_API_KEY:
+            renderer.render_success(f"  Groq: {current_groq} (API key configured)")
+        else:
+            renderer.render_plain(f"  Groq: {current_groq} (API key not set)")
+        renderer.render_plain("")
+        
+    except Exception as e:
+        Renderer().render_error(f"Error listing models: {str(e)}")
         sys.exit(1)
 
 

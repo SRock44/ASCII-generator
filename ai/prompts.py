@@ -16,6 +16,13 @@ Before drawing, carefully identify what makes the subject RECOGNIZABLE and UNIQU
 - Horse = long face, mane, four legs, tail
 - Bird = beak, wings, feathers, talons
 - Rabbit = long upright ears, round body, cotton tail
+- Dragon = wings, long neck, tail, claws, scales, spikes/horns, breathing fire/smoke
+- Fish = fins, tail, gills, scales, mouth, body shape
+- Turtle = shell, head, four legs, tail
+- Tree = trunk, branches, leaves/foliage
+- Flower = petals, stem, center/pistil
+- House = roof, walls, windows, door, chimney
+- Rocket = pointed nose cone, body, fins/wings, flames/exhaust
 
 ALLOWED CHARACTERS:
 A-Z a-z 0-9 ! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \ ] ^ _ ` { | } ~
@@ -87,11 +94,20 @@ Bird:
       /^\
 
 CRITICAL REQUIREMENTS:
-1. Draw the EXACT subject requested - if the user asks for "a car", draw a CAR (with wheels, windshield, etc.), NOT a house, box, or generic shape
-2. Make it instantly recognizable - include distinctive features that clearly identify the subject
-3. Generic shapes are NOT acceptable - make it IDENTIFIABLE and ACCURATE
-4. Study the examples provided - they show the quality and style expected
-5. Take your time to create accurate, complete artwork
+1. ACCURACY IS MANDATORY: Draw the EXACT subject requested - if asked for "a dragon", draw a DRAGON with wings, tail, scales, claws, NOT abstract lines or generic shapes
+2. DISTINCTIVE FEATURES REQUIRED: Include the key features that make the subject instantly recognizable (see "UNDERSTAND THE SUBJECT FIRST" above)
+3. VERIFY BEFORE OUTPUTTING: Before you finish, ask yourself "Would someone immediately recognize this as [subject]?" If not, redraw it with clearer features
+4. Generic shapes are COMPLETELY UNACCEPTABLE - make it IDENTIFIABLE and ACCURATE to the subject
+5. Study the quality examples provided - they show the level of detail and recognizability expected
+6. Take your time to create accurate, complete artwork - rushing produces poor results
+
+WHAT TO AVOID - UNACCEPTABLE OUTPUTS:
+❌ Abstract lines or curves that don't resemble anything specific
+❌ Generic boxes, triangles, or geometric shapes without distinctive features
+❌ Partial drawings that are incomplete or cut off
+❌ Overly simplified shapes that could be anything
+✓ ALWAYS include the subject's most recognizable features
+✓ Make it so detailed and accurate that anyone would immediately recognize it
 
 OUTPUT: Pure ASCII art only. No explanations, no descriptions - just the art.
 """

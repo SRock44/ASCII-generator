@@ -249,6 +249,17 @@ class ASCIIValidator:
                     )
                 # No warnings for pattern repetition
 
+                # DEGENERATE "LADDER/TEMPLATE" DETECTION (cheap, UX-focused)
+                # If most lines collapse to the same non-space structure, it's usually not a drawing.
+                # This catches outputs like the "dragon" example that is just repeated scaffolding.
+                if total_lines >= 10 and pattern_counts:
+                    max_fraction = max_pattern_count / total_lines if total_lines else 0
+                    # Require a strong majority to avoid false positives on legitimate patterns.
+                    if max_pattern_count >= 8 and max_fraction >= 0.75:
+                        errors.append(
+                            "Output appears to repeat the same line structure too many times (degenerate template/ladder)."
+                        )
+
                 # DENSITY CHECK - Very lenient (only error on extreme density)
                 original_lines = [line for line in lines if line.strip()]
                 all_chars = ''.join(original_lines)
@@ -358,23 +369,25 @@ class ASCIIValidator:
         # NOTE: Do NOT strip color hints here - the colorizer needs them to parse colors
         # Color hints will be stripped in the renderer after colorizer has parsed them
 
-        # Remove markdown code blocks AGGRESSIVELY
-        content = content.strip()
+        # Normalize newlines but DO NOT strip leading spaces.
+        # Leading indentation is part of ASCII art and must be preserved.
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
 
-        # Remove ALL lines that contain only ```
+        # Remove markdown code fences AGGRESSIVELY (common LLM artifact),
+        # but preserve indentation on all other lines.
         lines = content.split("\n")
-        lines = [line for line in lines if line.strip() != "```" and not line.strip().startswith("```")]
+        lines = [line for line in lines if not line.lstrip().startswith("```")]
 
-        # Remove language identifiers like ```ascii or ```text
-        if lines and lines[0].strip().startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() in ["```", "```\n"]:
-            lines = lines[:-1]
+        # Remove leading/trailing completely blank lines (not spaces on content lines).
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        while lines and not lines[-1].strip():
+            lines.pop()
 
-        content = "\n".join(lines).strip()
-        lines = content.split("\n")
+        content = "\n".join(lines)
+        lines = content.split("\n") if content else []
 
-        # Remove trailing whitespace from all lines
+        # Remove trailing whitespace from all lines (safe for alignment)
         lines = [line.rstrip() for line in lines]
 
         # Remove trailing empty lines
@@ -403,27 +416,11 @@ class ASCIIValidator:
             indent_range = max_indent - min_indent
 
             if self.mode == "art":
-                # For art: PRESERVE original alignment - different indents are intentional!
-                # Only normalize if there's EXTREME misalignment (>15 spaces difference)
-                # This suggests actual formatting errors, not intentional structure
-                if indent_range > 15:
-                    # Only normalize extreme outliers (>10 spaces from minimum)
-                    # This preserves intentional relative positioning
-                    fixed_lines = []
-                    for line in lines:
-                        if line.strip():
-                            current_indent = len(line) - len(line.lstrip())
-                            # Only fix if way off (more than 10 spaces from minimum)
-                            if current_indent - min_indent > 10:
-                                # Normalize extreme outliers to minimum
-                                fixed_lines.append(" " * min_indent + line.lstrip())
-                            else:
-                                # Keep original positioning - it's intentional structure
-                                fixed_lines.append(line)
-                        else:
-                            fixed_lines.append("")
-                    lines = fixed_lines
-                # Otherwise, keep ALL original alignment - it's intentional structure
+                # For art: do NOT shift lines left (can destroy drawings).
+                # We only do a SAFE fix: pad a small number of under-indented outlier lines
+                # up to the dominant indentation. This fixes cases like a top line being flush
+                # left while the rest of the drawing is indented.
+                lines = self._pad_underindented_outliers(lines)
             else:
                 # For charts/diagrams: Normalize alignment (they should be aligned)
                 if indent_range > 0:
@@ -508,19 +505,18 @@ class ASCIIValidator:
         if not content:
             return content
 
-        # Remove markdown code blocks
-        content = content.strip()
-        lines = content.split("\n")
-        lines = [line for line in lines if line.strip() != "```" and not line.strip().startswith("```")]
+        # Normalize newlines but DO NOT strip leading spaces (indentation is meaningful).
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
 
-        # Remove language identifiers
-        if lines and lines[0].strip().startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() in ["```", "```\n"]:
-            lines = lines[:-1]
-
-        content = "\n".join(lines).strip()
+        # Remove markdown code fences (``` / ```ascii / etc.) while preserving indentation elsewhere.
         lines = content.split("\n")
+        lines = [line for line in lines if not line.lstrip().startswith("```")]
+
+        # Remove leading/trailing completely blank lines.
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        while lines and not lines[-1].strip():
+            lines.pop()
 
         # Only remove trailing whitespace from lines (preserve leading spaces for structure)
         lines = [line.rstrip() for line in lines]
@@ -529,8 +525,60 @@ class ASCIIValidator:
         while lines and not lines[-1].strip():
             lines.pop()
 
+        # Safe art-only alignment fix (pads a few under-indented outlier lines).
+        # This improves UX in streamed output without risking destructive shifts.
+        if self.mode == "art":
+            lines = self._pad_underindented_outliers(lines)
+
         # That's it - preserve everything else (alignment, structure, etc.)
         return "\n".join(lines)
+
+    def _pad_underindented_outliers(self, lines: List[str]) -> List[str]:
+        """
+        Pad a small number of under-indented outlier lines to the dominant indentation.
+        Never removes leading spaces; only adds them.
+
+        This fixes common LLM artifacts where a single line (often the first) is flush-left
+        while the rest of the drawing is indented.
+        """
+        if not lines:
+            return lines
+
+        non_empty_indices = [i for i, l in enumerate(lines) if l.strip()]
+        if len(non_empty_indices) < 4:
+            return lines
+
+        indents = [len(lines[i]) - len(lines[i].lstrip()) for i in non_empty_indices]
+        indent_counts = Counter(indents)
+        dominant_indent, dominant_count = indent_counts.most_common(1)[0]
+
+        # Only act when there's a clear dominant indentation that is meaningfully > 0.
+        if dominant_indent < 2:
+            return lines
+        if (dominant_count / len(non_empty_indices)) < 0.60:
+            return lines
+
+        # Consider under-indented lines as outliers if they're notably smaller than dominant.
+        outliers = []
+        for i in non_empty_indices:
+            ci = len(lines[i]) - len(lines[i].lstrip())
+            if ci < (dominant_indent - 2):
+                outliers.append(i)
+
+        # If too many lines are "outliers", it may be intentional structure; do nothing.
+        if not outliers:
+            return lines
+        if (len(outliers) / len(non_empty_indices)) > 0.25:
+            return lines
+
+        fixed = list(lines)
+        for i in outliers:
+            line = fixed[i]
+            ci = len(line) - len(line.lstrip())
+            pad = dominant_indent - ci
+            if pad > 0:
+                fixed[i] = (" " * pad) + line
+        return fixed
 
     def _normalize_box_widths(self, lines: List[str]) -> List[str]:
         """
@@ -755,8 +803,9 @@ class ASCIIValidator:
                 if repeat_count <= max_allowed_occurrences:
                     cleaned.append(line)
                 else:
-                    # Only stop on extreme repetition (10+ times)
-                    break
+                    # Skip only the excessive repetitions, but keep scanning for subsequent unique lines.
+                    # Breaking here can incorrectly truncate otherwise-valid content that follows.
+                    continue
             else:
                 repeat_count = 1
                 last_line_normalized = line_normalized
@@ -1221,6 +1270,21 @@ class StreamingValidator:
 
         # Fast character filtering - this is blazing fast
         cleaned_chunk = self.validator.clean_chunk_fast(chunk)
+
+        # Strip markdown code block markers in real-time
+        # Check if this chunk contains ``` (markdown code block)
+        if '```' in cleaned_chunk:
+            # Remove lines that are just markdown markers
+            lines = cleaned_chunk.split('\n')
+            filtered_lines = []
+            for line in lines:
+                stripped = line.strip()
+                # Skip lines that are markdown code blocks or language identifiers
+                if stripped == '```' or stripped.startswith('```'):
+                    continue
+                filtered_lines.append(line)
+            cleaned_chunk = '\n'.join(filtered_lines)
+
         self.accumulated += cleaned_chunk
 
         # Check for repetitive patterns in real-time
@@ -1237,8 +1301,8 @@ class StreamingValidator:
     def _detect_repetition(self) -> bool:
         """
         Detect if we're getting repetitive content in real-time.
-        STRICT: Stops on excessive repetition (6+ identical lines).
-        Ensures quality output and prevents broken/infinite loops.
+        VERY LENIENT: Only stops on extreme repetition (12+ identical lines).
+        Legitimate ASCII art can have repeated patterns, so we're conservative.
         For charts: More lenient to allow legitimate chart patterns.
 
         Returns:
@@ -1249,50 +1313,50 @@ class StreamingValidator:
 
         # For charts, be more lenient - charts can have repetitive patterns legitimately
         if self.mode == "chart":
-            # Need at least 10 lines to detect repetition in charts
-            if len(lines) < 10:
+            # Need at least 15 lines to detect repetition in charts
+            if len(lines) < 15:
                 return False
-            
-            recent_lines = [line.strip() for line in lines[-12:] if line.strip()]
-            if len(recent_lines) < 10:
+
+            recent_lines = [line.strip() for line in lines[-15:] if line.strip()]
+            if len(recent_lines) < 12:
                 return False
-            
+
             # Normalize lines (remove all spacing)
-            normalized = [''.join(line.split()) for line in recent_lines[-10:]]
-            
-            # Only stop on EXTREME repetition for charts (10+ identical lines)
+            normalized = [''.join(line.split()) for line in recent_lines[-12:]]
+
+            # Only stop on EXTREME repetition for charts (12+ identical lines)
             if normalized and len(set(normalized)) == 1 and normalized[0]:
                 return True
             return False
-        
-        # For art/diagrams: original strict logic
-        # Need at least 6 lines to detect repetition
-        if len(lines) < 6:
+
+        # For art/diagrams: VERY LENIENT - only stop on extreme cases
+        # Need at least 12 lines to detect repetition
+        if len(lines) < 12:
             return False
 
         # Check the last several lines
-        recent_lines = [line.strip() for line in lines[-10:] if line.strip()]
+        recent_lines = [line.strip() for line in lines[-15:] if line.strip()]
 
-        if len(recent_lines) < 6:
+        if len(recent_lines) < 12:
             return False
 
         # Normalize lines (remove all spacing)
-        normalized = [''.join(line.split()) for line in recent_lines[-6:]]
+        normalized = [''.join(line.split()) for line in recent_lines[-12:]]
 
         # Check for simple patterns (very short, few unique chars)
         if normalized:
             first_pattern = normalized[0]
             unique_chars = len(set(first_pattern))
             pattern_length = len(first_pattern)
-            
+
             is_simple = pattern_length <= 3 and unique_chars <= 2
-            
+
             if is_simple:
-                # Simple patterns: stop after 4 identical lines
-                if len(set(normalized[:4])) == 1 and normalized[0]:
+                # Simple patterns: stop after 8 identical lines (was 4)
+                if len(set(normalized[:8])) == 1 and normalized[0]:
                     return True
             else:
-                # Complex patterns: stop after 6 identical lines
+                # Complex patterns: stop after 12 identical lines (was 6)
                 if len(set(normalized)) == 1 and normalized[0]:
                     return True
 
