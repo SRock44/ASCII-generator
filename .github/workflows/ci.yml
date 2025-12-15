@@ -20,25 +20,17 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: requirements.txt
 
-    - name: Run Test 1 - Syntax Check
+    - name: Install dependencies
       run: |
-        python tests/test_syntax.py
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+        python -m pip check
 
-    - name: Run Test 2 - ExampleLoader
+    - name: Run tests (pytest)
       run: |
-        python tests/test_example_loader.py
-
-    - name: Run Test 3 - PromptBuilder
-      run: |
-        python tests/test_prompt_builder.py
-
-    - name: Run Test 4 - Generator Init
-      run: |
-        python tests/test_generator_init.py
-
-    - name: Run Test 5 - Integration
-      run: |
-        python tests/test_integration.py
+        python -m pytest -q
 
 
