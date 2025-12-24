@@ -48,7 +48,7 @@ def setup_api_keys():
     print()
 
     # Groq API Key
-    print("1️⃣  Groq API Key (moonshotai/kimi-k2-instruct)")
+    print("1️⃣  Groq API Key (LLaMa 3.3 70B, GPT-OSS 120B, and more)")
     print("   Get your free key at: https://console.groq.com/keys")
     print()
     current_groq = existing_env.get('GROQ_API_KEY', '')
@@ -78,8 +78,9 @@ def setup_api_keys():
     print()
 
     # Model selection
-    print("3️⃣  Groq Model (optional - default: moonshotai/kimi-k2-instruct-0905)")
-    current_model = existing_env.get('GROQ_MODEL', 'moonshotai/kimi-k2-instruct-0905')
+    print("3️⃣  Groq Model (optional - default: llama-3.3-70b-versatile)")
+    print("   Available: llama-3.3-70b-versatile, openai/gpt-oss-120b, moonshotai/kimi-k2-instruct-0905")
+    current_model = existing_env.get('GROQ_MODEL', 'llama-3.3-70b-versatile')
     print(f"   Current: {current_model}")
     groq_model = input("   Enter Groq model (or press Enter to use default): ").strip()
     if not groq_model:

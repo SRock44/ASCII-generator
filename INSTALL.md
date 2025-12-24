@@ -133,6 +133,9 @@ ascii codebase /path/to/project [--max-files 50]
 # GitHub Repository Analysis
 ascii github owner/repo [--max-files 50]
 
+# List Available Models
+ascii models
+
 # Health Check
 ascii check
 ```
@@ -220,7 +223,7 @@ chmod +x ~/Projects/ASCII-Generator/ascii
 ```bash
 # Activate virtual environment
 cd ~/Projects/ASCII-Generator
-source .venv/bin/activate
+source .venv/bin/activate  # or: source venv/bin/activate
 
 # Then use one of the installation methods above
 ```

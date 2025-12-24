@@ -609,7 +609,9 @@ def models():
         renderer.render_plain("")
         
         groq_models = [
-            ("moonshotai/kimi-k2-instruct-0905", "Kimi K2 model - Fast and efficient (default)"),
+            ("llama-3.3-70b-versatile", "LLaMa 3.3 70B - 128K context, highly capable (recommended)"),
+            ("openai/gpt-oss-120b", "GPT-OSS 120B - OpenAI's open-weight MoE model, 500+ t/s"),
+            ("moonshotai/kimi-k2-instruct-0905", "Kimi K2 model - Fast and efficient"),
         ]
         
         current_groq = config.GROQ_MODEL
