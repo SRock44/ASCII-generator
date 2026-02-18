@@ -116,28 +116,15 @@ class ASCIIValidator:
         lines = content.split("\n")
         
         # Check for incomplete/cut-off art (common issue)
+        # VERY conservative: ASCII art endings are highly varied (decorative tips,
+        # artist signatures, asymmetric characters). Only flag cases where the last
+        # line is literally a lone opening bracket — the clearest sign of truncation.
         if self.mode == "art" and len(lines) >= 3:
             non_empty_lines = [line for line in lines if line.strip()]
             if non_empty_lines:
-                # Check if last line looks incomplete (ends with incomplete pattern)
                 last_line = non_empty_lines[-1].strip()
-                # Incomplete patterns: trailing backslashes, incomplete brackets, cut-off lines
-                incomplete_patterns = [
-                    last_line.endswith('\\') and len(last_line) < 5,  # Single trailing backslash
-                    last_line.endswith('/') and len(last_line) < 5,  # Single trailing slash
-                    last_line.endswith('|') and len(last_line) < 5,  # Single trailing pipe
-                    last_line.endswith('_') and len(last_line) < 5,  # Single trailing underscore
-                    last_line.count('(') != last_line.count(')'),  # Unmatched parentheses
-                    last_line.count('[') != last_line.count(']'),  # Unmatched brackets
-                    last_line.count('{') != last_line.count('}'),  # Unmatched braces
-                ]
-                # Also check if last line is much shorter than previous lines (likely cut off)
-                if len(non_empty_lines) >= 2:
-                    prev_line_len = len(non_empty_lines[-2].strip())
-                    if len(last_line) < prev_line_len * 0.3 and prev_line_len > 10:
-                        incomplete_patterns.append(True)
-                
-                if any(incomplete_patterns):
+                # Only flag a lone opening bracket with no closer (clearly truncated)
+                if last_line in ('(', '[', '{'):
                     errors.append("Art appears incomplete or cut off - ensure the drawing is complete")
 
         # 1. Check line count
