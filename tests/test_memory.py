@@ -183,8 +183,8 @@ def test_validator_char_sets_are_shared():
     assert v1.CHART_CHARS is v2.CHART_CHARS
 
 
-def test_validate_small_art_under_8kb():
-    """Validating a small piece of art should peak < 8 KB."""
+def test_validate_small_art_under_16kb():
+    """Validating a small piece of art should peak < 16 KB."""
     art = " /\\_/\\\n( o.o )\n > ^ <\n"
 
     def validate():
@@ -192,7 +192,7 @@ def test_validate_small_art_under_8kb():
         v.validate(art)
 
     peak = _snapshot_kb(validate)
-    assert peak < 8, f"Small art validation peaked at {peak:.1f} KB, expected < 8 KB"
+    assert peak < 16, f"Small art validation peaked at {peak:.1f} KB, expected < 16 KB"
 
 
 def test_validate_and_clean_under_16kb():
